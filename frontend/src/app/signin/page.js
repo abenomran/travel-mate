@@ -241,11 +241,14 @@ export default function SignIn(props) {
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Typography sx={{ textAlign: "center" }}>
           Don&apos;t have an account?{" "}
-          <NextLink href="/signup" passHref>
-            <Link component = {NextLink} href = "/signup" variant = "body2" underline = "hover">
+          <Link
+             component={NextLink}
+             href="/signup" 
+             variant = "body2" 
+             underline = "hover"
+          >
               Sign up
-            </Link>
-          </NextLink>
+          </Link>
         </Typography>
       </Box>
     </Card>
