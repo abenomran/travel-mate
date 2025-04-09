@@ -15,6 +15,7 @@ import Stack from "@mui/material/Stack";
 import MuiCard from "@mui/material/Card";
 import { styled } from "@mui/material/styles";
 import { SitemarkIcon } from "../components/CustomIcons";
+import NextLink from "next/link";
 
 // search params for redirection
 import { useRouter, useSearchParams } from "next/navigation";
@@ -235,13 +236,16 @@ export default function SignUp(props) {
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Typography sx={{ textAlign: "center" }}>
           Already have an account?{" "}
-          <Link
-            href="/material-ui/getting-started/templates/sign-in/"
-            variant="body2"
-            sx={{ alignSelf: "center" }}
-          >
-            Sign in
-          </Link>
+          <NextLink href="/signin" passHref>
+            <Link 
+              component = {NextLink}
+              href = "/signin"
+              variant = "body2"
+              underline = "hover"
+            >
+              Sign in
+            </Link>
+          </NextLink>
         </Typography>
       </Box>
     </Card>

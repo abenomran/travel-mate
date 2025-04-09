@@ -15,6 +15,7 @@ import Stack from "@mui/material/Stack";
 import MuiCard from "@mui/material/Card";
 import { styled } from "@mui/material/styles";
 import ForgotPassword from "../components/ForgotPassword";
+import NextLink from "next/link";
 // import AppTheme from "../shared-theme/AppTheme";
 // import ColorModeSelect from "../shared-theme/ColorModeSelect";
 import { SitemarkIcon } from "../components/CustomIcons";
@@ -72,7 +73,13 @@ export default function SignIn(props) {
   // redirection
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/";
+
+  let redirect = searchParams.get("redirect");
+  if (!redirect || redirect === "/") {
+  redirect = "/get-started";
+  }
+  console.log("Redirecting to:", redirect);
+
 
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
@@ -234,13 +241,11 @@ export default function SignIn(props) {
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Typography sx={{ textAlign: "center" }}>
           Don&apos;t have an account?{" "}
-          <Link
-            href="/material-ui/getting-started/templates/sign-in/"
-            variant="body2"
-            sx={{ alignSelf: "center" }}
-          >
-            Sign up
-          </Link>
+          <NextLink href="/signup" passHref>
+            <Link component = {NextLink} href = "/signup" variant = "body2" underline = "hover">
+              Sign up
+            </Link>
+          </NextLink>
         </Typography>
       </Box>
     </Card>
