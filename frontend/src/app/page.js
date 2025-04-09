@@ -20,7 +20,7 @@ export default function Home() {
         <Typography variant="h6" color="text.secondary" gutterBottom>
           Plan smarter. Pack better. Travel easier.
         </Typography>
-        <Link href="/signup" passHref>
+        <Link href={`/signin`}>
           <Button variant="contained" sx={{ mt: 3 }}>
             Get Started
           </Button>
@@ -116,7 +116,7 @@ export default function Home() {
         <Typography variant="h5" fontWeight="bold">
           Ready to plan your next trip?
         </Typography>
-        <Link href="/signup" passHref>
+        <Link href={`/signup`}>
           <Button variant="contained" size="large" sx={{ mt: 3 }}>
             Sign Up Now
           </Button>
