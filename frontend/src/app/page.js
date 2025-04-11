@@ -55,8 +55,8 @@ export default function Home() {
         <Grid container spacing={4}>
           {[
             { label: "Enter Destination", path: "/get-started" },
-            { label: "Get Weather Forecast", path: " " },
-            { label: "Receive Packing List", path: "/packing" },
+            { label: "Plan Activities", path: "/get-started" },
+            { label: "Receive Packing List", path: "/get-started" },
           ].map((step, idx) => (
             <Grid item xs={12} sm={4} key={idx}>
               <Link href={step.path} passHref>
