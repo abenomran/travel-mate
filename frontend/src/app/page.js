@@ -26,7 +26,6 @@ export default function Home() {
           </Button>
         </Link>
       </Container>
-
       {/* How It Works */}
       <Container maxWidth="lg" sx={{ mt: 8 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
@@ -34,24 +33,28 @@ export default function Home() {
         </Typography>
         <Grid container spacing={4}>
           {[
-            "Enter Destination",
-            "Get Weather Forecast",
-            "Receive Packing List",
+            { label: "Enter Destination", path: "/get-started" },
+            { label: "Get Weather Forecast", path: " "},
+            { label: "Receive Packing List", path: "/packing" },
           ].map((step, idx) => (
             <Grid item xs={12} sm={4} key={idx}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" fontWeight="bold">
-                    Step {idx + 1}
-                  </Typography>
-                  <Typography>{step}</Typography>
-                </CardContent>
-              </Card>
+              <Link href={step.path} passHref>
+                <Card
+                  component="a"
+                  sx={{ textDecoration: "none", cursor: "pointer", display: "block" }}
+                >
+                  <CardContent>
+                    <Typography variant="h6" fontWeight="bold">
+                      Step {idx + 1}
+                    </Typography>
+                    <Typography>{step.label}</Typography>
+                  </CardContent>
+                </Card>
+              </Link>
             </Grid>
           ))}
         </Grid>
       </Container>
-
       {/* Traveler Profiles */}
       <Container maxWidth="lg" sx={{ mt: 10 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
