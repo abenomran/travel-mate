@@ -1,3 +1,5 @@
+"use client";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -8,8 +10,29 @@ import {
   CardContent,
 } from "@mui/material";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { auth } from "./firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Home() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleGetStarted = () => {
+    if (user) {
+      router.push("/get-started");
+    } else {
+      router.push("/signin?redirect=/get-started");
+    }
+  };
+
   return (
     <Box sx={{ backgroundColor: "#F9FAFB", minHeight: "100vh", py: 6 }}>
       {/* Hero */}
@@ -20,11 +43,9 @@ export default function Home() {
         <Typography variant="h6" color="text.secondary" gutterBottom>
           Plan smarter. Pack better. Travel easier.
         </Typography>
-        <Link href={`/signin`}>
-          <Button variant="contained" sx={{ mt: 3 }}>
-            Get Started
-          </Button>
-        </Link>
+        <Button variant="contained" sx={{ mt: 3 }} onClick={handleGetStarted}>
+          Get Started
+        </Button>
       </Container>
       {/* How It Works */}
       <Container maxWidth="lg" sx={{ mt: 8 }}>
@@ -34,14 +55,18 @@ export default function Home() {
         <Grid container spacing={4}>
           {[
             { label: "Enter Destination", path: "/get-started" },
-            { label: "Get Weather Forecast", path: " "},
+            { label: "Get Weather Forecast", path: " " },
             { label: "Receive Packing List", path: "/packing" },
           ].map((step, idx) => (
             <Grid item xs={12} sm={4} key={idx}>
               <Link href={step.path} passHref>
                 <Card
                   component="a"
-                  sx={{ textDecoration: "none", cursor: "pointer", display: "block" }}
+                  sx={{
+                    textDecoration: "none",
+                    cursor: "pointer",
+                    display: "block",
+                  }}
                 >
                   <CardContent>
                     <Typography variant="h6" fontWeight="bold">
@@ -89,7 +114,6 @@ export default function Home() {
           </Grid>
         </Grid>
       </Container>
-
       {/* Features */}
       <Container maxWidth="lg" sx={{ mt: 10 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
@@ -113,7 +137,6 @@ export default function Home() {
           ))}
         </Grid>
       </Container>
-
       {/* Final CTA */}
       <Container maxWidth="lg" sx={{ textAlign: "center", mt: 12 }}>
         <Typography variant="h5" fontWeight="bold">
