@@ -1,29 +1,32 @@
 "use client";
 import { useAdminCheck } from "@/app/hooks/CheckAdmin";
 import Link from "next/link";
-import Button from "@mui/material/Button";
+import { Button, Container, Typography, Stack } from "@mui/material";
 
 export default function AdminPanel() {
   // admin check
   const { loading, isAdmin } = useAdminCheck(false);
   if (loading) return <div>Loading...</div>;
   if (!isAdmin) return <div>Unauthorized</div>;
+
   return isAdmin ? (
-    <div>
-      <h2>Welcome to your Admin Panel</h2>
-      <Link href="/admin/users" passHref>
-        <Button
-          sx={{
-            backgroundColor: "#3B82F6",
-            color: "#FFFFFF",
-            "&:hover": {
-              backgroundColor: "#2563EB",
-            },
-          }}
-        >
-          Users
+    <Container sx={{ mt: 6 }}>
+      <Typography variant="h4" gutterBottom>
+        Welcome to the TravelMate Admin Dashboard
+      </Typography>
+
+      <Typography variant="body1" sx={{ mb: 4 }}>
+        Here you can manage site content, user accounts, and more.
+      </Typography>
+
+      <Stack spacing={2} direction="row" flexWrap="wrap">
+        <Button variant="contained" href="/admin/users">
+          Manage Users
         </Button>
-      </Link>
-    </div>
+        <Button variant="contained" href="/admin/about">
+          Edit About/FAQ
+        </Button>
+      </Stack>
+    </Container>
   ) : null;
 }

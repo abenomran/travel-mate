@@ -59,7 +59,7 @@ const AdminNavbar = () => {
             </Button>
           </Link>
 
-          <Link href="/contact" passHref>
+          <Link href="/admin/about" passHref>
             <Button
               sx={{
                 backgroundColor: "#3B82F6",
@@ -69,7 +69,7 @@ const AdminNavbar = () => {
                 },
               }}
             >
-              Contact
+              About/FAQ
             </Button>
           </Link>
         </Box>
