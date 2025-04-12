@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
-// additional firebase SDKs
-// https://firebase.google.com/docs/web/setup#available-libraries
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -17,4 +16,8 @@ const app = initializeApp(firebaseConfig);
 
 // initialize auth
 const auth = getAuth(app);
-export { auth };
+
+// initialize firestore
+const db = getFirestore(app);
+
+export { auth, db };

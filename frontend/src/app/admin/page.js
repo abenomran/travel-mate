@@ -1,34 +1,32 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getAuth } from "firebase/auth";
-import { app } from "../firebase";
+import { useAdminCheck } from "@/app/hooks/CheckAdmin";
+import Link from "next/link";
+import { Button, Container, Typography, Stack } from "@mui/material";
 
 export default function AdminPanel() {
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    const auth = getAuth(app);
-    const user = auth.currentUser;
-
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    user.getIdTokenResult(true).then((idTokenResult) => {
-      if (idTokenResult.claims.role === "admin") {
-        setIsAdmin(true);
-      } else {
-        router.push("/unauthorized");
-      }
-      setLoading(false);
-    });
-  }, []);
-
+  // admin check
+  const { loading, isAdmin } = useAdminCheck(false);
   if (loading) return <div>Loading...</div>;
+  if (!isAdmin) return <div>Unauthorized</div>;
 
-  return isAdmin ? <div>Welcome to your Admin Panel</div> : null;
+  return isAdmin ? (
+    <Container sx={{ mt: 6 }}>
+      <Typography variant="h4" gutterBottom>
+        Welcome to the TravelMate Admin Dashboard
+      </Typography>
+
+      <Typography variant="body1" sx={{ mb: 4 }}>
+        Here you can manage site content, user accounts, and more.
+      </Typography>
+
+      <Stack spacing={2} direction="row" flexWrap="wrap">
+        <Button variant="contained" href="/admin/users">
+          Manage Users
+        </Button>
+        <Button variant="contained" href="/admin/about">
+          Edit About/FAQ
+        </Button>
+      </Stack>
+    </Container>
+  ) : null;
 }
