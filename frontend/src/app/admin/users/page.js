@@ -123,12 +123,17 @@ export default function Users() {
     }
   };
 
+  // filter admins/regular users
+  const adminUsers = users.filter((user) => user.role === "admin");
+  const regularUsers = users.filter((user) => user.role !== "admin");
+
   return (
     <Container maxWidth="md" sx={{ my: 4 }}>
       <Typography variant="h4" gutterBottom>
         Manage Users
       </Typography>
 
+      {/* Create User */}
       <Paper sx={{ p: 2, mb: 4 }}>
         <Box display="flex" alignItems="center">
           <Box display="flex" alignItems="center" flexGrow={1} gap={2}>
@@ -163,44 +168,93 @@ export default function Users() {
         </Box>
       </Paper>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Email</TableCell>
-              <TableCell>UID</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.uid}>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.uid}</TableCell>
-                <TableCell align="right" colSpan={2}>
-                  <Box display="flex" justifyContent="flex-end" gap={1}>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      onClick={() => handleEdit(user)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      onClick={() => handleDelete(user.uid)}
-                    >
-                      Delete
-                    </Button>
-                  </Box>
-                </TableCell>
+      {/* Admins Table */}
+      <Box mb={6}>
+        <Typography variant="h6" gutterBottom>
+          Admins
+        </Typography>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Email</TableCell>
+                <TableCell>UID</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {adminUsers.map((user) => (
+                <TableRow key={user.uid}>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.uid}</TableCell>
+                  <TableCell align="right">
+                    <Box display="flex" justifyContent="flex-end" gap={1}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => handleEdit(user)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleDelete(user.uid)}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+
+      {/* Regular Users Table */}
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          Users
+        </Typography>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Email</TableCell>
+                <TableCell>UID</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {regularUsers.map((user) => (
+                <TableRow key={user.uid}>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.uid}</TableCell>
+                  <TableCell align="right">
+                    <Box display="flex" justifyContent="flex-end" gap={1}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => handleEdit(user)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleDelete(user.uid)}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
 
       <EditUserModal
         open={!!editingUser}

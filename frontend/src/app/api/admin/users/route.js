@@ -18,6 +18,7 @@ export async function GET() {
     const users = listUsersResult.users.map((userRecord) => ({
       uid: userRecord.uid,
       email: userRecord.email,
+      role: userRecord.customClaims?.role || "user", // for admin filtering
     }));
 
     return NextResponse.json(users);
