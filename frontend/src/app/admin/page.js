@@ -8,7 +8,6 @@ export default function AdminPanel() {
   const { loading, isAdmin } = useAdminCheck(false);
   if (loading) return <div>Loading...</div>;
   if (!isAdmin) return <div>Unauthorized</div>;
-
   return isAdmin ? (
     <div>
       <h2>Welcome to your Admin Panel</h2>

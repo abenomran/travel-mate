@@ -20,11 +20,6 @@ import EditUserModal from "@/app/components/EditUserModal";
 import { useAdminCheck } from "@/app/hooks/CheckAdmin";
 
 export default function Users() {
-  // admin check
-  const { loading, isAdmin } = useAdminCheck();
-  if (loading) return <div>Loading...</div>;
-  if (!isAdmin) return null;
-
   const [users, setUsers] = useState([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,12 +27,21 @@ export default function Users() {
   // edit states
   const [editingUser, setEditingUser] = useState(null);
 
+  // admin check values
+  const { loading, isAdmin } = useAdminCheck();
+
   // Fetch users
   useEffect(() => {
+    if (!isAdmin) return; // admin check (skip fetch)
+
     fetch("/api/admin/users")
       .then((res) => res.json())
       .then((data) => setUsers(data));
-  }, []);
+  }, [isAdmin]);
+
+  // admin check return
+  if (loading) return <div>Loading...</div>;
+  if (!isAdmin) return null;
 
   // Create user
   const handleCreate = async () => {
