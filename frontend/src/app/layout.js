@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
-import Navbar from "./components/navbar";
+import Navbar from "./components/Navbar";
 // firebase auth
 import { AuthProvider } from "./providers/AuthProvider";
 

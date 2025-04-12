@@ -6,7 +6,7 @@ import { useAuth } from "../providers/AuthProvider";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 
-const Navbar = () => {
+const AdminNavbar = () => {
   const { user } = useAuth();
   const pathname = usePathname();
   const safeRedirect =
@@ -28,7 +28,7 @@ const Navbar = () => {
         {/* Left: Logo + Links */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Typography variant="h6" component="div" sx={{ color: "#FFFFFF" }}>
-            TravelMate
+            ADMIN
           </Typography>
 
           <Link href="/" passHref>
@@ -41,11 +41,11 @@ const Navbar = () => {
                 },
               }}
             >
-              Home
+              Main Site
             </Button>
           </Link>
 
-          <Link href="/about" passHref>
+          <Link href="/admin/users" passHref>
             <Button
               sx={{
                 backgroundColor: "#3B82F6",
@@ -55,7 +55,7 @@ const Navbar = () => {
                 },
               }}
             >
-              About
+              Users
             </Button>
           </Link>
 
@@ -126,4 +126,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default AdminNavbar;

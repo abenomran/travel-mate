@@ -1,34 +1,30 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getAuth } from "firebase/auth";
-import { app } from "../firebase";
+import { useAdminCheck } from "@/app/hooks/CheckAdmin";
+import Link from "next/link";
+import Button from "@mui/material/Button";
 
 export default function AdminPanel() {
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    const auth = getAuth(app);
-    const user = auth.currentUser;
-
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    user.getIdTokenResult(true).then((idTokenResult) => {
-      if (idTokenResult.claims.role === "admin") {
-        setIsAdmin(true);
-      } else {
-        router.push("/unauthorized");
-      }
-      setLoading(false);
-    });
-  }, []);
-
+  // admin check
+  const { loading, isAdmin } = useAdminCheck(false);
   if (loading) return <div>Loading...</div>;
+  if (!isAdmin) return <div>Unauthorized</div>;
 
-  return isAdmin ? <div>Welcome to your Admin Panel</div> : null;
+  return isAdmin ? (
+    <div>
+      <h2>Welcome to your Admin Panel</h2>
+      <Link href="/admin/users" passHref>
+        <Button
+          sx={{
+            backgroundColor: "#3B82F6",
+            color: "#FFFFFF",
+            "&:hover": {
+              backgroundColor: "#2563EB",
+            },
+          }}
+        >
+          Users
+        </Button>
+      </Link>
+    </div>
+  ) : null;
 }
