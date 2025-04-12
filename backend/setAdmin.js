@@ -7,7 +7,7 @@ admin.initializeApp({
 
 // Replace this with the UID of the user you want to set as admin (from firebase console)
 // then run backend with node setAdmin.js
-const uid = "YOUR_FIREBASE_USER_UID";
+const uid = "LXB3Mkjwk0SjoLqGEPEl1j01hdD2";
 
 admin
   .auth()
