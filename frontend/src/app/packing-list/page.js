@@ -7,6 +7,7 @@ import {
   Typography,
   CircularProgress,
   Paper,
+  Divider,
 } from "@mui/material";
 import ReactMarkdown from "react-markdown";
 
@@ -18,13 +19,16 @@ export default function PackingListPage() {
   const activities = searchParams.get("activities")?.split(",") || [];
 
   const [packingList, setPackingList] = useState("");
+  const [travelTips, setTravelTips] = useState("");
+  const [localEssentials, setLocalEssentials] = useState("");
+  const [clothingSuggestions, setClothingSuggestions] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const hasFetched = useRef(false); // ✅ Prevent repeated calls
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    const fetchPackingList = async () => {
+    const fetchPackingData = async () => {
       setLoading(true);
       try {
         const response = await fetch("/api/packing", {
@@ -39,11 +43,15 @@ export default function PackingListPage() {
         });
 
         const data = await response.json();
-        setPackingList(data.list || "No packing list returned.");
+
+        setPackingList(data.packingList || "No packing list returned.");
+        setTravelTips(data.travelTips || "No travel tips available.");
+        setLocalEssentials(data.localEssentials || "No local essentials listed.");
+        setClothingSuggestions(data.clothingSuggestions || "No clothing suggestions provided.");
         setError("");
       } catch (err) {
         console.error("Packing list error:", err);
-        setError("Failed to generate packing list. Try again later.");
+        setError("Failed to generate packing information. Try again later.");
       } finally {
         setLoading(false);
       }
@@ -51,7 +59,7 @@ export default function PackingListPage() {
 
     if (!hasFetched.current && destination && start && end && activities.length > 0) {
       hasFetched.current = true;
-      fetchPackingList();
+      fetchPackingData();
     }
   }, [destination, start, end, activities]);
 
@@ -81,9 +89,41 @@ export default function PackingListPage() {
             {error}
           </Typography>
         ) : (
-          <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
-            <ReactMarkdown>{packingList}</ReactMarkdown>
-          </Paper>
+          <>
+            <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Packing List
+              </Typography>
+              <ReactMarkdown>{packingList}</ReactMarkdown>
+            </Paper>
+
+            <Divider sx={{ my: 4 }} />
+
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Clothing Suggestions
+              </Typography>
+              <ReactMarkdown>{clothingSuggestions}</ReactMarkdown>
+            </Paper>
+
+            <Divider sx={{ my: 4 }} />
+
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Local Essentials
+              </Typography>
+              <ReactMarkdown>{localEssentials}</ReactMarkdown>
+            </Paper>
+
+            <Divider sx={{ my: 4 }} />
+
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Travel Tips
+              </Typography>
+              <ReactMarkdown>{travelTips}</ReactMarkdown>
+            </Paper>
+          </>
         )}
       </Container>
     </Box>
