@@ -5,13 +5,13 @@ import {
   Button,
   Container,
   Typography,
-  TextField,
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function TripDetails() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const destination = searchParams.get("destination");
   const start = searchParams.get("start");
@@ -25,12 +25,15 @@ export default function TripDetails() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Destination:", destination);
-    console.log("Start Date:", start);
-    console.log("End Date:", end);
-    console.log("Activities:", activities);
 
-    alert("Trip saved! (or redirect to packing list)");
+    const query = new URLSearchParams({
+      destination,
+      start,
+      end,
+      activities: activities.join(","),
+    }).toString();
+
+    router.push(`/packing-list?${query}`);
   };
 
   return (
@@ -44,7 +47,8 @@ export default function TripDetails() {
           Destination: <strong>{destination || "N/A"}</strong>
         </Typography>
         <Typography variant="subtitle1" gutterBottom>
-          Dates: <strong>{start || "N/A"}</strong> to <strong>{end || "N/A"}</strong>
+          Dates: <strong>{start || "N/A"}</strong> to{" "}
+          <strong>{end || "N/A"}</strong>
         </Typography>
 
         <form onSubmit={handleSubmit}>
@@ -59,18 +63,24 @@ export default function TripDetails() {
             fullWidth
             sx={{ flexWrap: "wrap", mb: 3 }}
           >
-            {["Hiking", "Beach", "Business", "Backpacking", "Skiing", "Photography", "Sightseeing"].map(
-              (activity) => (
-                <ToggleButton
-                  key={activity}
-                  value={activity}
-                  aria-label={activity}
-                  sx={{ m: 0.5 }}
-                >
-                  {activity}
-                </ToggleButton>
-              )
-            )}
+            {[
+              "Hiking",
+              "Beach",
+              "Business",
+              "Backpacking",
+              "Skiing",
+              "Photography",
+              "Sightseeing",
+            ].map((activity) => (
+              <ToggleButton
+                key={activity}
+                value={activity}
+                aria-label={activity}
+                sx={{ m: 0.5 }}
+              >
+                {activity}
+              </ToggleButton>
+            ))}
           </ToggleButtonGroup>
 
           <Button
