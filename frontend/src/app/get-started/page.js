@@ -59,6 +59,7 @@ export default function GetStarted() {
   const [unit, setUnit] = useState("C");
 
   const debouncedDestination = useDebounce(destination, 400);
+  const isValidDestination = destination.split(",").length >= 3;
 
   const isTripSoon = () => {
     if (!startDate) return false;
@@ -78,6 +79,7 @@ export default function GetStarted() {
         const suggestions = data.data.map(
           (city) => `${city.city}, ${city.regionCode}, ${city.countryCode}`
         );
+        suggestions.sort();
         setCityOptions(suggestions);
       } catch (err) {
         console.error("Autocomplete error:", err);
@@ -185,7 +187,7 @@ export default function GetStarted() {
   return (
     <Box sx={{ backgroundColor: "#F9FAFB", minHeight: "100vh", py: 6 }}>
       <Container maxWidth="sm">
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
+        <Typography variant="h4" fontWeight="bold" gutterBottom textAlign="center">
           Plan Your Trip
         </Typography>
 
@@ -196,13 +198,17 @@ export default function GetStarted() {
             inputValue={destination}
             onInputChange={(e, value) => setDestination(value || "")}
             onChange={(e, value) => {
-              const city = value?.split(",")[0]?.trim();
-              if (city) setDestination(city);
+              if (value) setDestination(value);
             }}
             renderInput={(params) => (
-              <TextField {...params} label="Destination" variant="outlined" sx={{ mb: 3 }} />
+              <TextField {...params} label="Destination" variant="outlined" required sx={{ mb: 1 }} />
             )}
           />
+        
+
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+            e.g. “Atlanta, GA, US” or “Paris, Île-de-France, FR”
+          </Typography>
 
           <TextField
             fullWidth
@@ -225,7 +231,7 @@ export default function GetStarted() {
             sx={{ mb: 3 }}
           />
 
-          <Button type="submit" variant="contained" fullWidth disabled={loading || !destination || !startDate}>
+          <Button type="submit" variant="contained" fullWidth disabled={loading || !startDate || !isValidDestination}>
             {loading ? <CircularProgress size={24} color="inherit" /> : "Get Weather"}
           </Button>
         </form>
@@ -243,39 +249,56 @@ export default function GetStarted() {
                 5-Day Forecast for {destination}
               </Typography>
               <Button variant="outlined" onClick={() => setUnit(unit === "C" ? "F" : "C")}>
-                Convert to {unit === "C" ? "Fahrenheit" : "Celsius"}
+                {unit === "C" ? "Fahrenheit" : "Celsius"}
               </Button>
             </Box>
 
-            <Grid container spacing={3} sx={{ mt: 1 }}>
-              {forecast.map((day, idx) => (
-                <Grid item xs={12} sm={6} md={4} key={idx}>
-                  <Card sx={{ textAlign: "center", py: 2 }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        {formatDate(day.time)}
-                      </Typography>
-                      <Box sx={{ my: 2 }}>
-                        <img
-                          src={getWeatherIconUrl(day.values.weatherCodeMax)}
-                          alt="weather icon"
-                          style={{ width: 60, height: 60, borderRadius: 8, objectFit: "contain" }}
-                        />
-                      </Box>
-                      <Typography fontWeight="bold">
-                        H: {convertTemp(day.values.temperatureMax)} / L: {convertTemp(day.values.temperatureMin)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        💧 {day.values.precipitationProbabilityAvg || 0}%
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        🌬 {day.values.windSpeedAvg} m/s
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+            <Box sx={{ overflowX: "auto", whiteSpace: "nowrap", mt: 2 }}>
+  <Box sx={{ display: "flex", gap: 2 }}>
+    {forecast.map((day, idx) => (
+      <Card
+        key={idx}
+        sx={{
+          minWidth: 180,
+          maxWidth: 180,
+          flexShrink: 0,
+          py: 2,
+          boxShadow: 2,
+          borderRadius: 3,
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
+        <CardContent>
+          <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
+            {formatDate(day.time)}
+          </Typography>
+
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            <img
+              src={getWeatherIconUrl(day.values.weatherCodeMax)}
+              alt="weather icon"
+              style={{ width: 60, height: 60, objectFit: "contain" }}
+            />
+          </Box>
+
+          <Typography fontWeight="bold" sx={{ mb: 1 }}>
+            H: {convertTemp(day.values.temperatureMax)} / L: {convertTemp(day.values.temperatureMin)}
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary">
+            💧 {day.values.precipitationProbabilityAvg ?? 0}%
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            🌬 {day.values.windSpeedAvg} m/s
+          </Typography>
+        </CardContent>
+      </Card>
+    ))}
+  </Box>
+</Box>
           </>
         )}
 
