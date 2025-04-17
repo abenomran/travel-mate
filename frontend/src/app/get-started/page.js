@@ -23,6 +23,15 @@ function useDebounce(value, delay = 500) {
   }, [value, delay]);
   return debounced;
 }
+const buildGoogleCalendarUrl = ({ destination, startDate, endDate }) => {
+  const formatDate = (d) => new Date(d).toISOString().replace(/[-:]|(\.\d{3})/g, '').slice(0, 15);
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+    `&text=Trip+to+${encodeURIComponent(destination)}` +
+    `&dates=${formatDate(startDate)}/${formatDate(endDate)}` +
+    `&details=${encodeURIComponent("Planned using BrainBridge!")}` +
+    `&location=${encodeURIComponent(destination)}`;
+};
+
 
 const formatDate = (isoDate) => {
   const date = new Date(isoDate);
@@ -322,21 +331,38 @@ export default function GetStarted() {
           </Box>
         )}
 
-        {(destination && startDate) && (
-          <Button
-            variant="contained"
-            fullWidth
-            sx={{ mt: 4 }}
-            onClick={() =>
-              router.push(
-                `/trip-details?destination=${encodeURIComponent(destination)}&start=${startDate}&end=${endDate}`
-              )
-            }
-          >
-            Next: Choose Activities
-          </Button>
+{(destination && startDate) && (
+          <>
+            <Button
+              variant="contained"
+              fullWidth
+              sx={{ mt: 4 }}
+              onClick={() =>
+                router.push(
+                  `/trip-details?destination=${encodeURIComponent(destination)}&start=${startDate}&end=${endDate}`
+                )
+              }
+            >
+              Next: Choose Activities
+            </Button>
+
+            {endDate && (
+              <Button
+                variant="outlined"
+                fullWidth
+                sx={{ mt: 2 }}
+                onClick={() =>
+                  window.open(buildGoogleCalendarUrl({ destination, startDate, endDate }), "_blank")
+                }
+              >
+                Save to Google Calendar
+              </Button>
+            )}
+          </>
         )}
       </Container>
     </Box>
   );
 }
+  
+
