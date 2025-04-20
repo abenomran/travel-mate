@@ -17,6 +17,7 @@ export default function PackingListPage() {
   const start = searchParams.get("start");
   const end = searchParams.get("end");
   const activities = searchParams.get("activities")?.split(",") || [];
+  const reminderDate = searchParams.get("reminderDate");
 
   const [packingList, setPackingList] = useState("");
   const [travelTips, setTravelTips] = useState("");
@@ -78,6 +79,12 @@ export default function PackingListPage() {
         <Typography variant="subtitle2" gutterBottom>
           Activities: {activities.join(", ") || "None selected"}
         </Typography>
+
+        {reminderDate && ( 
+          <Typography variant="subtitle2" gutterBottom sx={{ color: "green" }}>
+            Reminder Set For: <strong>{reminderDate}</strong>
+          </Typography>
+        )}
 
         {loading ? (
           <Box sx={{ textAlign: "center", mt: 4 }}>
