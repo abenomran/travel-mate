@@ -37,13 +37,14 @@ export async function POST(req) {
     - Packing List:
       - Toiletries: [items]
       - Gear: [items]
-      - Misc: [items]`;
+      - Misc: [items]
+      Bullet point format with bolded headings. Dont provide a heading that says "Packing List".`;
     
-    const travelTipsPrompt = `Give brief travel tips for ${destination} (max 100 words). Focus on navigation, transport, and food. Use bullet points.`;
+    const travelTipsPrompt = `Give brief travel tips for ${destination} (max 100 words). Focus on navigation, transport, and food. Bullet point format with bolded headings. Dont provide a heading that says "Travel Tips".`;
     
-    const localEssentialsPrompt = `List key local essentials for visiting ${destination}. Keep it under 100 words. Bullet point format.`;
+    const localEssentialsPrompt = `List key local essentials for visiting ${destination}. Keep it under 100 words. Bullet point format with bolded headings. Dont provide a heading that says "Local Essentials".`;
     
-    const clothingSuggestionsPrompt = `Suggest clothing for a ${duration}-day trip to ${destination} with activities: ${activities.join(", ")}. Be concise (max 100 words).`;    
+    const clothingSuggestionsPrompt = `Suggest clothing for a ${duration}-day trip to ${destination} with activities: ${activities.join(", ")}. Bullet point format with bolded headings. Be concise (max 100 words). Dont provide a heading that says "Clothing Suggestions".`;
 
     const packingList = await generateSectionContent(packingListPrompt);
     const travelTips = await generateSectionContent(travelTipsPrompt);
