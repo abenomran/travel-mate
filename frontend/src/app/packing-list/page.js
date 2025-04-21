@@ -140,7 +140,7 @@ export default function PackingListPage() {
     <Box sx={{ backgroundColor: "#F9FAFB", minHeight: "100vh", py: 6 }}>
       <Container maxWidth="md">
         <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Your Smart Packing List
+          Your Smart Trip Suggestions
         </Typography>
 
         <Typography variant="subtitle1" gutterBottom>

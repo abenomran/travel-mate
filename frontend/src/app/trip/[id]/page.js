@@ -75,6 +75,15 @@ export default function TripDetailsPage() {
         </Typography>
       </Paper>
 
+      <Paper sx={{ p: 3, mb: 3, mt: 4 }}>
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+          Clothing Suggestions
+        </Typography>
+        <Typography>
+          <ReactMarkdown>{trip.clothingSuggestions}</ReactMarkdown>
+        </Typography>
+      </Paper>
+
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
           Local Essentials
