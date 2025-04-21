@@ -36,10 +36,8 @@ export default function PackingListPage() {
     const fetchPackingData = async () => {
       setLoading(true);
       try {
-        // get userID
         const user = auth.currentUser;
         if (!user) throw new Error("User not authenticated");
-        const uid = user.uid;
 
         const response = await fetch("/api/packing", {
           method: "POST",
@@ -62,24 +60,6 @@ export default function PackingListPage() {
         setClothingSuggestions(
           data.clothingSuggestions || "No clothing suggestions provided."
         );
-
-        // // store data to firebase
-        // const tripData = {
-        //   destination,
-        //   startDate: start,
-        //   endDate: end,
-        //   activities,
-        //   packingList: data.packingList || "No packing list returned.",
-        //   travelTips: data.travelTips || "No travel tips available.",
-        //   localEssentials:
-        //     data.localEssentials || "No local essentials listed.",
-        //   clothingSuggestions:
-        //     data.clothingSuggestions || "No clothing suggestions provided.",
-        //   createdAt: serverTimestamp(),
-        // };
-        // const tripsRef = collection(doc(collection(db, "users"), uid), "trips");
-        // await addDoc(tripsRef, tripData);
-
         setError("");
       } catch (err) {
         console.log("Packing list error:", err);
@@ -126,7 +106,6 @@ export default function PackingListPage() {
       const newTripDoc = await addDoc(tripsRef, tripData);
 
       console.log("ID:", newTripDoc.id);
-      // Redirect to the new trip page (with firebase data fetching)
       router.push(`/trip/${newTripDoc.id}`);
     } catch (err) {
       console.log("Save trip error:", err);
