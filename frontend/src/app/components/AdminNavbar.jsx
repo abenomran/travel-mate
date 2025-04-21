@@ -72,6 +72,20 @@ const AdminNavbar = () => {
               About/FAQ
             </Button>
           </Link>
+
+          <Link href="/admin/activities" passHref>
+            <Button
+              sx={{
+                backgroundColor: "#3B82F6",
+                color: "#FFFFFF",
+                "&:hover": {
+                  backgroundColor: "#2563EB",
+                },
+              }}
+            >
+              Activities
+            </Button>
+          </Link>
         </Box>
 
         {/* Right: Auth buttons */}
