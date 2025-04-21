@@ -11,6 +11,7 @@ import {
   AccordionDetails,
   Button,
   Stack,
+  CircularProgress,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
@@ -43,7 +44,13 @@ export default function AboutEditPage() {
   }, []);
 
   // admin check
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <Container sx={{ mt: 6 }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
   if (!isAdmin) return null;
 
   const handleSaveParagraphs = async () => {

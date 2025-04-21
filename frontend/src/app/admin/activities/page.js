@@ -11,12 +11,23 @@ import {
   List,
   ListItem,
   ListItemText,
+  CircularProgress,
 } from "@mui/material";
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 import { Edit, Delete } from "@mui/icons-material";
+import { useAdminCheck } from "@/app/hooks/CheckAdmin";
 import app from "@/firebaseClient";
 
 export default function AdminActivitiesPage() {
+  const { loading, isAdmin } = useAdminCheck();
   const db = getFirestore(app);
   const activitiesCollection = collection(db, "activities");
 
@@ -26,15 +37,27 @@ export default function AdminActivitiesPage() {
   const [editingName, setEditingName] = useState("");
 
   useEffect(() => {
+    if (!isAdmin) return;
+
     fetchActivities();
-  }, []);
+  }, [isAdmin]);
+
+  // admin check
+  if (loading) {
+    return (
+      <Container sx={{ mt: 6 }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+  if (!isAdmin) return null;
 
   const fetchActivities = async () => {
     try {
       const querySnapshot = await getDocs(activitiesCollection);
-      const fetchedActivities = querySnapshot.docs.map(doc => ({
+      const fetchedActivities = querySnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
       setActivities(fetchedActivities);
     } catch (err) {
@@ -72,7 +95,9 @@ export default function AdminActivitiesPage() {
     if (!editingName.trim()) return;
 
     try {
-      await updateDoc(doc(db, "activities", editingId), { name: editingName.trim() });
+      await updateDoc(doc(db, "activities", editingId), {
+        name: editingName.trim(),
+      });
       setEditingId(null);
       setEditingName("");
       fetchActivities(); // Refresh the list
@@ -130,7 +155,9 @@ export default function AdminActivitiesPage() {
                     <IconButton onClick={() => handleStartEdit(activity)}>
                       <Edit />
                     </IconButton>
-                    <IconButton onClick={() => handleDeleteActivity(activity.id)}>
+                    <IconButton
+                      onClick={() => handleDeleteActivity(activity.id)}
+                    >
                       <Delete />
                     </IconButton>
                   </>

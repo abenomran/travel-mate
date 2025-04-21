@@ -13,8 +13,10 @@ import {
 } from "@mui/material";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import app from "@/firebaseClient";
+import { useAdminCheck } from "@/app/hooks/CheckAdmin";
 
 export default function AdminReminderTemplatePage() {
+  const { isAdmin } = useAdminCheck();
   const db = getFirestore(app);
   // Store the template at /templates/reminderTemplate
   const templateDocRef = doc(db, "templates", "reminderTemplate");
@@ -22,12 +24,20 @@ export default function AdminReminderTemplatePage() {
   const [template, setTemplate] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   useEffect(() => {
+    if (!isAdmin) return;
+
     fetchTemplate();
     // eslint-disable-next-line
-  }, []);
+  }, [isAdmin]);
+
+  if (!isAdmin) return null;
 
   const fetchTemplate = async () => {
     setLoading(true);
@@ -40,7 +50,11 @@ export default function AdminReminderTemplatePage() {
       }
     } catch (err) {
       console.error("Error fetching template:", err);
-      setSnackbar({ open: true, message: "Error loading template.", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Error loading template.",
+        severity: "error",
+      });
     }
     setLoading(false);
   };
@@ -49,10 +63,18 @@ export default function AdminReminderTemplatePage() {
     setSaving(true);
     try {
       await setDoc(templateDocRef, { text: template });
-      setSnackbar({ open: true, message: "Template saved!", severity: "success" });
+      setSnackbar({
+        open: true,
+        message: "Template saved!",
+        severity: "success",
+      });
     } catch (err) {
       console.error("Error saving template:", err);
-      setSnackbar({ open: true, message: "Error saving template.", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Error saving template.",
+        severity: "error",
+      });
     }
     setSaving(false);
   };
@@ -80,13 +102,13 @@ export default function AdminReminderTemplatePage() {
                 onChange={(e) => setTemplate(e.target.value)}
                 sx={{ mb: 2 }}
                 InputProps={{
-                    sx: {
-                    '& textarea': {
-                        resize: 'vertical',
+                  sx: {
+                    "& textarea": {
+                      resize: "vertical",
                     },
-                    },
+                  },
                 }}
-                />
+              />
               <Button
                 variant="contained"
                 onClick={handleSave}
@@ -106,7 +128,7 @@ export default function AdminReminderTemplatePage() {
           <Alert
             onClose={() => setSnackbar({ ...snackbar, open: false })}
             severity={snackbar.severity}
-            sx={{ width: '100%' }}
+            sx={{ width: "100%" }}
           >
             {snackbar.message}
           </Alert>
