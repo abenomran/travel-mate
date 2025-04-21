@@ -23,6 +23,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 // firebase auth
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
@@ -138,8 +139,17 @@ export default function SignUp(props) {
         password
       );
 
+
       // created and signed in
       const user = userCredential.user;
+      const db = getFirestore();
+
+      await setDoc(doc(db, "users", user.uid), {
+        name: data.get("name"),
+        email: user.email,
+        createdAt: new Date(),
+        role: "user"
+      });
       console.log("User created and signed in:", user);
       console.log("auth.currentUser:", auth.currentUser);
 

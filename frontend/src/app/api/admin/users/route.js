@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { initializeApp, cert, getApps, getApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import serviceAccount from "@/serviceAccountKey.json";
+import { getFirestore } from "firebase-admin/firestore";
 
 // initialize firebase SDK for backend (admin)
 const app =
@@ -39,19 +40,51 @@ export async function POST(req) {
   }
 }
 
-// Deletes firebase user
+async function deleteUserData(db, userDocRef) {
+  const collections = await userDocRef.listCollections();
+  
+  for (const collectionRef of collections) {
+    const snapshot = await collectionRef.get();
+    
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    for (const doc of snapshot.docs) {
+      await deleteUserData(db, doc.ref);
+    }
+  }
+  
+  await userDocRef.delete();
+}
+
 export async function DELETE(req) {
   const { uid } = await req.json();
 
   if (!uid) {
-    return NextResponse.json({ error: "UID is required" }, { status: 400 });
+    return NextResponse.json({ error: "UID required" }, { status: 400 });
   }
 
+  const auth = getAuth();
+  const db = getFirestore();
+
   try {
-    await getAuth().deleteUser(uid);
-    return NextResponse.json({ message: "User deleted successfully" });
+    const userDocRef = db.collection("users").doc(uid);
+    
+    await deleteUserData(db, userDocRef);
+    
+    await auth.deleteUser(uid);
+
+    return NextResponse.json({ 
+      message: "User account and all associated data deleted" 
+    });
+    
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Deletion error:", error);
+    return NextResponse.json(
+      { error: error.message || "User deletion failed" },
+      { status: 500 }
+    );
   }
 }
 
