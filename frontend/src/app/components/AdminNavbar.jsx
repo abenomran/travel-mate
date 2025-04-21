@@ -86,6 +86,21 @@ const AdminNavbar = () => {
               Activities
             </Button>
           </Link>
+
+
+          <Link href="/admin/reminder" passHref>
+            <Button
+              sx={{
+                backgroundColor: "#3B82F6",
+                color: "#FFFFFF",
+                "&:hover": {
+                  backgroundColor: "#2563EB",
+                },
+              }}
+            >
+              Reminder Template
+            </Button>
+          </Link>
         </Box>
 
         {/* Right: Auth buttons */}

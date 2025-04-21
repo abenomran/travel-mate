@@ -29,6 +29,9 @@ export default function AdminPanel() {
         <Button variant="contained" href="/admin/activities">
           Edit Activities
         </Button>
+        <Button variant="contained" href="/admin/reminder">
+          Edit Reminder Template
+        </Button>
       </Stack>
     </Container>
   ) : null;
