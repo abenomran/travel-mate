@@ -77,16 +77,29 @@ const MainNavbar = () => {
         {/* Right: Auth buttons */}
         <Box sx={{ display: "flex", gap: 1 }}>
           {user ? (
-            <Button
-              onClick={handleSignOut}
-              sx={{
-                backgroundColor: "#F87171",
-                color: "#FFFFFF",
-                "&:hover": { backgroundColor: "#DC2626" },
-              }}
-            >
-              Sign Out
-            </Button>
+            <>
+              <Link href="/trips" passHref>
+                <Button
+                  sx={{
+                    backgroundColor: "#F1F5F9",
+                    color: "#1E293B",
+                    "&:hover": { backgroundColor: "#E2E8F0" },
+                  }}
+                >
+                  Trips
+                </Button>
+              </Link>
+              <Button
+                onClick={handleSignOut}
+                sx={{
+                  backgroundColor: "#F87171",
+                  color: "#FFFFFF",
+                  "&:hover": { backgroundColor: "#DC2626" },
+                }}
+              >
+                Sign Out
+              </Button>
+            </>
           ) : (
             <>
               <Link

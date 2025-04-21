@@ -1,8 +1,9 @@
 "use client";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import {
   Box,
+  Button,
   Container,
   Typography,
   CircularProgress,
@@ -10,8 +11,11 @@ import {
   Divider,
 } from "@mui/material";
 import ReactMarkdown from "react-markdown";
+import { auth, db } from "../firebase";
+import { collection, doc, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function PackingListPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const destination = searchParams.get("destination");
   const start = searchParams.get("start");
@@ -24,6 +28,7 @@ export default function PackingListPage() {
   const [clothingSuggestions, setClothingSuggestions] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const hasFetched = useRef(false);
 
@@ -31,6 +36,11 @@ export default function PackingListPage() {
     const fetchPackingData = async () => {
       setLoading(true);
       try {
+        // get userID
+        const user = auth.currentUser;
+        if (!user) throw new Error("User not authenticated");
+        const uid = user.uid;
+
         const response = await fetch("/api/packing", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -46,22 +56,85 @@ export default function PackingListPage() {
 
         setPackingList(data.packingList || "No packing list returned.");
         setTravelTips(data.travelTips || "No travel tips available.");
-        setLocalEssentials(data.localEssentials || "No local essentials listed.");
-        setClothingSuggestions(data.clothingSuggestions || "No clothing suggestions provided.");
+        setLocalEssentials(
+          data.localEssentials || "No local essentials listed."
+        );
+        setClothingSuggestions(
+          data.clothingSuggestions || "No clothing suggestions provided."
+        );
+
+        // // store data to firebase
+        // const tripData = {
+        //   destination,
+        //   startDate: start,
+        //   endDate: end,
+        //   activities,
+        //   packingList: data.packingList || "No packing list returned.",
+        //   travelTips: data.travelTips || "No travel tips available.",
+        //   localEssentials:
+        //     data.localEssentials || "No local essentials listed.",
+        //   clothingSuggestions:
+        //     data.clothingSuggestions || "No clothing suggestions provided.",
+        //   createdAt: serverTimestamp(),
+        // };
+        // const tripsRef = collection(doc(collection(db, "users"), uid), "trips");
+        // await addDoc(tripsRef, tripData);
+
         setError("");
       } catch (err) {
-        console.error("Packing list error:", err);
+        console.log("Packing list error:", err);
         setError("Failed to generate packing information. Try again later.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (!hasFetched.current && destination && start && end && activities.length > 0) {
+    if (
+      !hasFetched.current &&
+      destination &&
+      start &&
+      end &&
+      activities.length > 0
+    ) {
       hasFetched.current = true;
       fetchPackingData();
     }
   }, [destination, start, end, activities]);
+
+  const handleSaveTrip = async () => {
+    setSaving(true);
+    setError("");
+
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
+      const uid = user.uid;
+
+      const tripData = {
+        destination,
+        startDate: start,
+        endDate: end,
+        activities,
+        packingList,
+        travelTips,
+        localEssentials,
+        clothingSuggestions,
+        createdAt: serverTimestamp(),
+      };
+
+      const tripsRef = collection(doc(collection(db, "users"), uid), "trips");
+      const newTripDoc = await addDoc(tripsRef, tripData);
+
+      console.log("ID:", newTripDoc.id);
+      // Redirect to the new trip page (with firebase data fetching)
+      router.push(`/trip/${newTripDoc.id}`);
+    } catch (err) {
+      console.log("Save trip error:", err);
+      setError("Failed to save trip.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Box sx={{ backgroundColor: "#F9FAFB", minHeight: "100vh", py: 6 }}>
@@ -71,8 +144,18 @@ export default function PackingListPage() {
         </Typography>
 
         <Typography variant="subtitle1" gutterBottom>
-          For your trip to <strong>{destination}</strong> from{" "}
-          <strong>{start}</strong> to <strong>{end}</strong>
+          For your trip to{" "}
+          <Typography component="span" fontWeight="bold">
+            {destination}
+          </Typography>{" "}
+          from{" "}
+          <Typography component="span" fontWeight="bold">
+            {start}
+          </Typography>{" "}
+          to{" "}
+          <Typography component="span" fontWeight="bold">
+            {end}
+          </Typography>
         </Typography>
 
         <Typography variant="subtitle2" gutterBottom>
@@ -124,6 +207,26 @@ export default function PackingListPage() {
               <ReactMarkdown>{travelTips}</ReactMarkdown>
             </Paper>
           </>
+        )}
+        {!loading && !error && (
+          <Box sx={{ mt: 4, textAlign: "center" }}>
+            <Button
+              onClick={handleSaveTrip}
+              disabled={saving}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "#1976d2",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                fontSize: "16px",
+                cursor: "pointer",
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {saving ? "Saving..." : "Save Trip"}
+            </Button>
+          </Box>
         )}
       </Container>
     </Box>
