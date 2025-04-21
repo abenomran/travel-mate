@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -9,6 +9,8 @@ import {
   ToggleButtonGroup,
 } from "@mui/material";
 import { useSearchParams, useRouter } from "next/navigation";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import app from "@/firebaseClient";
 
 export default function TripDetails() {
   const router = useRouter();
@@ -18,9 +20,30 @@ export default function TripDetails() {
   const end = searchParams.get("end");
 
   const [activities, setActivities] = useState([]);
+  const [selectedActivities, setSelectedActivities] = useState([]);
+
+  const db = getFirestore(app);
+  const activitiesCollection = collection(db, "activities");
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const querySnapshot = await getDocs(activitiesCollection);
+        const fetched = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setActivities(fetched);
+      } catch (err) {
+        console.error("Error fetching activities:", err);
+      }
+    };
+
+    fetchActivities();
+  }, []);
 
   const handleActivityChange = (event, newActivities) => {
-    setActivities(newActivities);
+    setSelectedActivities(newActivities);
   };
 
   const handleSubmit = (e) => {
@@ -30,7 +53,7 @@ export default function TripDetails() {
       destination,
       start,
       end,
-      activities: activities.join(","),
+      activities: selectedActivities.join(","),
     }).toString();
 
     router.push(`/packing-list?${query}`);
@@ -57,28 +80,20 @@ export default function TripDetails() {
           </Typography>
 
           <ToggleButtonGroup
-            value={activities}
+            value={selectedActivities}
             onChange={handleActivityChange}
             aria-label="activities"
             fullWidth
             sx={{ flexWrap: "wrap", mb: 3 }}
           >
-            {[
-              "Hiking",
-              "Beach",
-              "Business",
-              "Backpacking",
-              "Skiing",
-              "Photography",
-              "Sightseeing",
-            ].map((activity) => (
+            {activities.map((activity) => (
               <ToggleButton
-                key={activity}
-                value={activity}
-                aria-label={activity}
+                key={activity.id}
+                value={activity.name}
+                aria-label={activity.name}
                 sx={{ m: 0.5 }}
               >
-                {activity}
+                {activity.name}
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
@@ -87,7 +102,7 @@ export default function TripDetails() {
             type="submit"
             variant="contained"
             fullWidth
-            disabled={activities.length === 0}
+            disabled={selectedActivities.length === 0}
           >
             Save Trip
           </Button>
