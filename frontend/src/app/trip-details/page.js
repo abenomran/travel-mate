@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -7,13 +7,9 @@ import {
   Typography,
   ToggleButton,
   ToggleButtonGroup,
-  TextField,
-  Snackbar,
 } from "@mui/material";
 import { useSearchParams, useRouter } from "next/navigation";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 import app from "@/firebaseClient";
 
 export default function TripDetails() {
@@ -24,52 +20,43 @@ export default function TripDetails() {
   const end = searchParams.get("end");
 
   const [activities, setActivities] = useState([]);
-  const [reminderDate, setReminderDate] = useState("");
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [selectedActivities, setSelectedActivities] = useState([]);
 
   const db = getFirestore(app);
+  const activitiesCollection = collection(db, "activities");
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const querySnapshot = await getDocs(activitiesCollection);
+        const fetched = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setActivities(fetched);
+      } catch (err) {
+        console.error("Error fetching activities:", err);
+      }
+    };
+
+    fetchActivities();
+  }, []);
 
   const handleActivityChange = (event, newActivities) => {
-    setActivities(newActivities);
+    setSelectedActivities(newActivities);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    const auth = getAuth(app);
-    const user = auth.currentUser;
-    const uid = user?.uid;
-
-    const tripData = {
+    const query = new URLSearchParams({
       destination,
       start,
       end,
-      activities,
-      reminderDate,
-      uid,
-      createdAt: serverTimestamp(),
-    };
+      activities: selectedActivities.join(","),
+    }).toString();
 
-    try {
-      await addDoc(collection(db, "trips"), tripData);
-      if (reminderDate) {
-        await addDoc(collection(db, "reminders"), {
-          destination,
-          start,
-          reminderDate,
-          createdAt: serverTimestamp(),
-        });
-      }
-      router.push(`/packing-list?destination=${destination}&start=${start}&end=${end}&activities=${activities.join(",")}&reminderDate=${reminderDate}`);
-    } catch (err) {
-      console.error("Error saving trip:", err);
-    }
-  };
-
-  const handleCopyLink = () => {
-    const url = `${window.location.origin}/packing-list?destination=${destination}&start=${start}&end=${end}&activities=${activities.join(",")}`;
-    navigator.clipboard.writeText(url);
-    setSnackbarOpen(true);
+    router.push(`/packing-list?${query}`);
   };
 
   return (
@@ -83,7 +70,8 @@ export default function TripDetails() {
           Destination: <strong>{destination || "N/A"}</strong>
         </Typography>
         <Typography variant="subtitle1" gutterBottom>
-          Dates: <strong>{start || "N/A"}</strong> to <strong>{end || "N/A"}</strong>
+          Dates: <strong>{start || "N/A"}</strong> to{" "}
+          <strong>{end || "N/A"}</strong>
         </Typography>
 
         <form onSubmit={handleSubmit}>
@@ -92,60 +80,34 @@ export default function TripDetails() {
           </Typography>
 
           <ToggleButtonGroup
-            value={activities}
+            value={selectedActivities}
             onChange={handleActivityChange}
             aria-label="activities"
             fullWidth
             sx={{ flexWrap: "wrap", mb: 3 }}
           >
-            {["Hiking", "Beach", "Business", "Backpacking", "Skiing", "Photography", "Sightseeing"].map((activity) => (
+            {activities.map((activity) => (
               <ToggleButton
-                key={activity}
-                value={activity}
-                aria-label={activity}
+                key={activity.id}
+                value={activity.name}
+                aria-label={activity.name}
                 sx={{ m: 0.5 }}
               >
-                {activity}
+                {activity.name}
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
-
-          <TextField
-            label="Reminder Date (YYYY-MM-DD)"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            value={reminderDate}
-            onChange={(e) => setReminderDate(e.target.value)}
-            fullWidth
-            sx={{ mb: 3 }}
-          />
 
           <Button
             type="submit"
             variant="contained"
             fullWidth
-            disabled={activities.length === 0}
-            sx={{ mb: 2 }}
+            disabled={selectedActivities.length === 0}
           >
             Save Trip
           </Button>
-
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={handleCopyLink}
-          >
-            Copy Shareable Trip Link
-          </Button>
         </form>
       </Container>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000}
-        onClose={() => setSnackbarOpen(false)}
-        message="Trip link copied to clipboard!"
-      />
     </Box>
   );
 }
