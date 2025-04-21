@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
-import { collection, doc, getDocs } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc } from "firebase/firestore";
 import {
   Container,
   Typography,
@@ -12,16 +12,19 @@ import {
   Button,
 } from "@mui/material";
 import Link from "next/link";
+import dayjs from "dayjs";
 
 export default function Trips() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reminderMessage, setReminderMessage] = useState("");
 
   useEffect(() => {
     const fetchTrips = async () => {
       const user = auth.currentUser;
       if (!user) {
         console.log("User not logged in");
+        setLoading(false);
         return;
       }
 
@@ -42,8 +45,88 @@ export default function Trips() {
       }
     };
 
+    const fetchReminderTemplate = async () => {
+      try {
+        const reminderDoc = await getDoc(doc(db, "templates", "reminderTemplate"));
+        if (reminderDoc.exists()) {
+          setReminderMessage(reminderDoc.data().text || "");
+        }
+      } catch (err) {
+        console.log("Error fetching reminder template:", err);
+      }
+    };
+
     fetchTrips();
+    fetchReminderTemplate();
   }, []);
+
+  const today = dayjs();
+
+  const upcomingTrips = trips.filter((trip) => {
+    if (!trip.startDate) return false;
+    const start = dayjs(trip.startDate);
+    return start.diff(today, "day") >= 0 && start.diff(today, "day") < 3;
+  });
+  
+  const otherTrips = trips.filter((trip) => {
+    if (!trip.startDate) return false;
+    const start = dayjs(trip.startDate);
+    return !(start.diff(today, "day") >= 0 && start.diff(today, "day") < 3);
+  });
+
+  const renderTrips = (tripList) => (
+    <Grid container spacing={3}>
+      <Box sx={{ width: "100%" }}>
+        {tripList.map((trip) => (
+          <Link
+            key={trip.id}
+            href={`/trip/${trip.id}`}
+            passHref
+            legacyBehavior
+          >
+            <Box
+              component="a"
+              sx={{
+                width: "100%",
+                display: "block",
+                textDecoration: "none",
+              }}
+            >
+              <ButtonBase
+                sx={{
+                  width: "100%",
+                  textAlign: "left",
+                  mb: 2,
+                  p: 3,
+                  borderRadius: 2,
+                  backgroundColor: "#fff",
+                  borderLeft: "6px solid #1976d2",
+                  boxShadow: 1,
+                  transition: "transform 0.15s ease, box-shadow 0.2s ease",
+                  "&:hover": {
+                    backgroundColor: "#f0f4ff",
+                    transform: "scale(1.01)",
+                    boxShadow: 3,
+                  },
+                  display: "block",
+                }}
+              >
+                <Typography variant="h6" fontWeight="bold">
+                  {trip.destination}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {trip.startDate} → {trip.endDate}
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  Activities: {trip.activities?.join(", ") || "None"}
+                </Typography>
+              </ButtonBase>
+            </Box>
+          </Link>
+        ))}
+      </Box>
+    </Grid>
+  );
 
   return (
     <Container sx={{ mt: 6 }}>
@@ -59,65 +142,52 @@ export default function Trips() {
             Looks like you haven't created any trips yet.
           </Typography>
           <Typography variant="body1" gutterBottom>
-            Ready to start planning? Let us help you pack smart and travel
-            better.
+            Ready to start planning? Let us help you pack smart and travel better.
           </Typography>
           <Button variant="contained" color="primary" href="/get-started">
             Plan Your First Trip
           </Button>
         </>
       ) : (
-        <Grid container spacing={3}>
-          <Box sx={{ width: "100%" }}>
-            {trips.map((trip) => (
-              <Link
-                key={trip.id}
-                href={`/trip/${trip.id}`}
-                passHref
-                legacyBehavior
-              >
-                <Box
-                  component="a"
-                  sx={{
-                    width: "100%",
-                    display: "block",
-                    textDecoration: "none",
-                  }}
-                >
-                  <ButtonBase
-                    sx={{
-                      width: "100%",
-                      textAlign: "left",
-                      mb: 2,
-                      p: 3,
-                      borderRadius: 2,
-                      backgroundColor: "#fff",
-                      borderLeft: "6px solid #1976d2",
-                      boxShadow: 1,
-                      transition: "transform 0.15s ease, box-shadow 0.2s ease",
-                      "&:hover": {
-                        backgroundColor: "#f0f4ff",
-                        transform: "scale(1.01)",
-                        boxShadow: 3,
-                      },
-                      display: "block",
-                    }}
-                  >
-                    <Typography variant="h6" fontWeight="bold">
-                      {trip.destination}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {trip.startDate} → {trip.endDate}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      Activities: {trip.activities?.join(", ") || "None"}
-                    </Typography>
-                  </ButtonBase>
-                </Box>
-              </Link>
-            ))}
-          </Box>
-        </Grid>
+        <>
+          <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
+            Upcoming Trips
+          </Typography>
+          {reminderMessage && upcomingTrips.length > 0 && (
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                mb: 2,
+                color: 'orange',
+                fontWeight: 500,
+                backgroundColor: '#fff7eb',
+                p: 1.5,
+                borderRadius: 1,
+                borderLeft: '4px solid orange'
+              }}
+            >
+              {reminderMessage}
+            </Typography>
+          )}
+          {upcomingTrips.length > 0 ? (
+            renderTrips(upcomingTrips)
+          ) : (
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              No upcoming trips in the next 3 days.
+            </Typography>
+          )}
+
+          <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
+            All other Trips
+          </Typography>
+          {otherTrips.length > 0 ? (
+            renderTrips(otherTrips)
+          ) : (
+            <Typography variant="body2">
+              No other trips yet.
+            </Typography>
+          )}
+        </>
       )}
     </Container>
   );
