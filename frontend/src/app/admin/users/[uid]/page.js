@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { db } from "@/app/firebase";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, addDoc } from "firebase/firestore";
 import {
   Container,
   Typography,
@@ -11,21 +11,22 @@ import {
   ButtonBase,
   Box,
   Button,
+  Stack,
 } from "@mui/material";
 import Link from "next/link";
 import { useAdminCheck } from "@/app/hooks/CheckAdmin";
+import CreateTripDialog from "@/app/admin/components/CreateTripDialog";
 
 export default function Trips() {
   const { uid } = useParams();
   const [userEmail, setUserEmail] = useState("");
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // admin check values
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const { isAdmin } = useAdminCheck();
 
   useEffect(() => {
-    if (!isAdmin) return; // admin check (skip fetch)
+    if (!isAdmin) return;
 
     const fetchTrips = async () => {
       const userRef = doc(collection(db, "users"), uid);
@@ -50,7 +51,29 @@ export default function Trips() {
     };
 
     fetchTrips();
-  }, [isAdmin]);
+  }, [isAdmin, uid]);
+
+  const handleCreateTrip = async (tripData) => {
+    try {
+      const userRef = doc(collection(db, "users"), uid);
+      const tripsRef = collection(userRef, "trips");
+
+      await addDoc(tripsRef, {
+        ...tripData,
+        createdAt: new Date().toISOString(),
+      });
+
+      const snapshot = await getDocs(tripsRef);
+      const tripsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setTrips(tripsData);
+    } catch (err) {
+      console.error("Error creating trip:", err);
+      alert("Failed to create trip: " + err.message);
+    }
+  };
 
   if (loading) {
     return (
@@ -60,14 +83,27 @@ export default function Trips() {
     );
   }
 
-  // admin check return
   if (!isAdmin) return null;
 
   return (
     <Container sx={{ mt: 6 }}>
-      <Typography variant="h4" gutterBottom fontWeight="bold">
-        {userEmail}'s Trips
-      </Typography>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={4}
+      >
+        <Typography variant="h4" gutterBottom fontWeight="bold">
+          {userEmail}'s Trips
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => setOpenCreateDialog(true)}
+          sx={{ height: "fit-content" }}
+        >
+          Create New Trip
+        </Button>
+      </Stack>
 
       {loading ? (
         <CircularProgress />
@@ -130,6 +166,13 @@ export default function Trips() {
           </Box>
         </Grid>
       )}
+
+      <CreateTripDialog
+        open={openCreateDialog}
+        onClose={() => setOpenCreateDialog(false)}
+        onCreate={handleCreateTrip}
+        uid={uid}
+      />
     </Container>
   );
 }
