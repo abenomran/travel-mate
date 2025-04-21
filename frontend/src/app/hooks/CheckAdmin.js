@@ -19,7 +19,6 @@ export function useAdminCheck(redirect = true) {
 
       const idTokenResult = await user.getIdTokenResult(true);
       const isAdminUser = idTokenResult.claims.role === "admin";
-
       setIsAdmin(isAdminUser);
       setLoading(false);
 

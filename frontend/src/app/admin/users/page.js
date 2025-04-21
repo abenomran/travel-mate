@@ -191,6 +191,13 @@ export default function Users() {
                     <Box display="flex" justifyContent="flex-end" gap={1}>
                       <Button
                         variant="outlined"
+                        color="secondary"
+                        href={`/admin/users/${user.uid}`}
+                      >
+                        Trips
+                      </Button>
+                      <Button
+                        variant="outlined"
                         color="primary"
                         onClick={() => handleEdit(user)}
                       >
@@ -233,6 +240,13 @@ export default function Users() {
                   <TableCell>{user.uid}</TableCell>
                   <TableCell align="right">
                     <Box display="flex" justifyContent="flex-end" gap={1}>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        href={`/admin/users/${user.uid}`}
+                      >
+                        Trips
+                      </Button>
                       <Button
                         variant="outlined"
                         color="primary"
