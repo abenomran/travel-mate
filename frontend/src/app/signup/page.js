@@ -77,13 +77,10 @@ export default function SignUp(props) {
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
-  const [nameError, setNameError] = React.useState(false);
-  const [nameErrorMessage, setNameErrorMessage] = React.useState("");
 
   const validateInputs = () => {
     const email = document.getElementById("email");
     const password = document.getElementById("password");
-    const name = document.getElementById("name");
 
     let isValid = true;
 
@@ -103,15 +100,6 @@ export default function SignUp(props) {
     } else {
       setPasswordError(false);
       setPasswordErrorMessage("");
-    }
-
-    if (!name.value || name.value.length < 1) {
-      setNameError(true);
-      setNameErrorMessage("Name is required.");
-      isValid = false;
-    } else {
-      setNameError(false);
-      setNameErrorMessage("");
     }
 
     return isValid;
@@ -145,7 +133,6 @@ export default function SignUp(props) {
       const db = getFirestore();
 
       await setDoc(doc(db, "users", user.uid), {
-        name: data.get("name"),
         email: user.email,
         createdAt: new Date(),
         role: "user"
@@ -182,20 +169,6 @@ export default function SignUp(props) {
         onSubmit={handleSubmit}
         sx={{ display: "flex", flexDirection: "column", gap: 2 }}
       >
-        <FormControl>
-          <FormLabel htmlFor="name">Full name</FormLabel>
-          <TextField
-            autoComplete="name"
-            name="name"
-            required
-            fullWidth
-            id="name"
-            placeholder="Jon Snow"
-            error={nameError}
-            helperText={nameErrorMessage}
-            color={nameError ? "error" : "primary"}
-          />
-        </FormControl>
         <FormControl>
           <FormLabel htmlFor="email">Email</FormLabel>
           <TextField
