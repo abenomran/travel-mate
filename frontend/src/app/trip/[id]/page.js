@@ -59,7 +59,6 @@ export default function TripDetailsPage() {
   const [climateData, setClimateData] = useState([]);
   const [unit, setUnit] = useState("C");
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
-  const [thingsToDo, setThingsToDo] = useState("");
   const [isTooFarOut, setIsTooFarOut] = useState(false);
 
   useEffect(() => {
@@ -73,7 +72,6 @@ export default function TripDetailsPage() {
         if (snapshot.exists()) {
           const data = snapshot.data();
           setTrip(data);
-          setThingsToDo(data.thingsToDo || "");
         } else {
           console.error("Trip not found");
         }
@@ -91,16 +89,22 @@ export default function TripDetailsPage() {
     if (!trip) return;
 
     const fetchWeatherOrClimate = async () => {
-      const { destination, startDate } = trip;
+      const { destination, startDate, endDate } = trip;
       const location = encodeURIComponent(destination.trim());
       const start = new Date(startDate);
-      const today = new Date();
-      const isSoon = (start - today) / (1000 * 60 * 60 * 24) <= 10;
+      const end = new Date(endDate);
+      const now = new Date();
+      const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+      const fiveDaysFromNow = new Date(now.getTime() + 5 * MS_PER_DAY);
+
+      const isSoon =
+        end >= now && start <= fiveDaysFromNow;
 
       if (isSoon) {
         try {
           const response = await fetch(
-            `https://api.tomorrow.io/v4/weather/forecast?location=${location}&apikey=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}&startTime=${start.toISOString()}`
+            `https://api.tomorrow.io/v4/weather/forecast?location=${location}&apikey=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}&startTime=${start.toISOString()}&endTime=${end.toISOString()}`
           );
           const data = await response.json();
           setTimezone(data.location.tz);
@@ -113,33 +117,6 @@ export default function TripDetailsPage() {
         }
       } else {
         setIsTooFarOut(true);
-        try {
-          const cityOnly = destination.split(",")[0];
-          const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${cityOnly}`);
-          const geoData = await geoRes.json();
-          const coords = geoData.results?.[0];
-          if (!coords) return;
-
-          setTimezone(coords.timezone);
-
-          const climateRes = await fetch(
-            `https://climate-api.open-meteo.com/v1/climate?latitude=${coords.latitude}&longitude=${coords.longitude}&start_year=1991&end_year=2020&temperature_unit=celsius`
-          );
-          const climate = await climateRes.json();
-          const monthIndex = new Date(startDate).getMonth();
-          const monthData = climate.monthly[monthIndex];
-
-          setClimateData([
-            {
-              name: new Date(startDate).toLocaleString("default", { month: "long" }),
-              High: monthData.temperature_2m_max,
-              Low: monthData.temperature_2m_min,
-              Precipitation: monthData.precipitation_sum,
-            },
-          ]);
-        } catch (err) {
-          console.error("Failed to fetch climate data:", err);
-        }
       }
     };
 
@@ -269,7 +246,7 @@ export default function TripDetailsPage() {
             Weather Forecast Unavailable
           </Typography>
           <Typography variant="body2">
-            The trip dates are too far in the future to show an accurate weather forecast.
+            The trip dates are too far in the future or already passed to show an accurate weather forecast.
           </Typography>
         </Box>
       ) : null}
@@ -291,13 +268,6 @@ export default function TripDetailsPage() {
           </ResponsiveContainer>
         </Box>
       )}
-
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Things To Do
-        </Typography>
-        <ReactMarkdown>{thingsToDo}</ReactMarkdown>
-      </Paper>
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
