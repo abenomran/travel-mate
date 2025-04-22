@@ -29,6 +29,8 @@ export default function PackingListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [thingsToDo, setThingsToDo] = useState("");
+
 
   const hasFetched = useRef(false);
 
@@ -60,6 +62,7 @@ export default function PackingListPage() {
         setClothingSuggestions(
           data.clothingSuggestions || "No clothing suggestions provided."
         );
+        setThingsToDo(data.thingsToDo || "No activity recommendations available.");
         setError("");
       } catch (err) {
         console.log("Packing list error:", err);
@@ -99,6 +102,7 @@ export default function PackingListPage() {
         travelTips,
         localEssentials,
         clothingSuggestions,
+        thingsToDo,
         createdAt: serverTimestamp(),
       };
 
@@ -152,6 +156,15 @@ export default function PackingListPage() {
           </Typography>
         ) : (
           <>
+            <Paper elevation = {3} sx={{ p: 3, mb: 3 }}>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Things to Do
+              </Typography>
+              <ReactMarkdown>{thingsToDo}</ReactMarkdown>
+            </Paper>
+
+          <Divider sx={{ my: 4 }} />
+
             <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
                 Packing List
