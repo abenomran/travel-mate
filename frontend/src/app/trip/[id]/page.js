@@ -184,8 +184,7 @@ export default function TripDetailsPage() {
       </Typography>
 
       <Typography variant="subtitle1" gutterBottom>
-        {new Date(startDate).toLocaleString("en-US", { timeZone: timezone, dateStyle: "medium" })} →{" "}
-        {new Date(endDate).toLocaleString("en-US", { timeZone: timezone, dateStyle: "medium" })}
+        {trip.startDate} → {trip.endDate}
       </Typography>
 
       <Typography variant="subtitle2" gutterBottom>
