@@ -115,7 +115,7 @@ export default function Home() {
               color="primary"
               onClick={handleGetStarted}
             >
-              Get Started
+              Create Trip
             </Button>
           </Container>
         </Box>
