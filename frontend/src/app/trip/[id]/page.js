@@ -11,16 +11,23 @@ import {
   Button,
   ToggleButton,
   ToggleButtonGroup,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Fab,
+  Tooltip,
 } from "@mui/material";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../../firebase";
 import ReactMarkdown from "react-markdown";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
   ResponsiveContainer,
   Legend,
 } from "recharts";
@@ -55,8 +62,9 @@ export default function TripDetailsPage() {
   const router = useRouter();
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
   const [forecast, setForecast] = useState([]);
-  const [climateData, setClimateData] = useState([]);
   const [unit, setUnit] = useState("C");
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [isTooFarOut, setIsTooFarOut] = useState(false);
@@ -84,6 +92,78 @@ export default function TripDetailsPage() {
 
     fetchTrip();
   }, [id]);
+
+  const handleOpenPreview = async () => {
+    const element = document.getElementById("trip-content");
+    const canvas = await html2canvas(element, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    setPreviewImage(imgData);
+    setPreviewOpen(true);
+  };
+
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById("trip-content");
+    const canvas = await html2canvas(element, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+  
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+  
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgWidth = pdfWidth;
+    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+  
+    const canvasHeight = canvas.height;
+    const canvasWidth = canvas.width;
+  
+    // Scale factor between px and mm
+    const ratio = imgWidth / canvasWidth;
+  
+    // Height in px of one PDF page (after header space)
+    const pageHeightPx = (pdfHeight - 20) / ratio;
+  
+    let position = 20;
+  
+    pdf.setFontSize(14);
+    const Msg = `Hey! I'm planning a trip to ${trip.destination} using TravelMate.`;
+    pdf.text(Msg, 10, 15);
+  
+    let pageCanvas, pageCtx, imgChunk;
+    let remainingHeight = canvasHeight;
+    let offset = 0;
+  
+    while (remainingHeight > 0) {
+      const sliceHeight = Math.min(pageHeightPx, remainingHeight);
+  
+      // Create new canvas for the slice
+      pageCanvas = document.createElement("canvas");
+      pageCanvas.width = canvasWidth;
+      pageCanvas.height = sliceHeight;
+  
+      pageCtx = pageCanvas.getContext("2d");
+      pageCtx.drawImage(
+        canvas,
+        0, offset, // source x, y
+        canvasWidth, sliceHeight, // source width, height
+        0, 0, // destination x, y
+        canvasWidth, sliceHeight // destination width, height
+      );
+  
+      imgChunk = pageCanvas.toDataURL("image/png");
+      pdf.addImage(imgChunk, "PNG", 0, position, imgWidth, sliceHeight * ratio);
+  
+      remainingHeight -= sliceHeight;
+      offset += sliceHeight;
+  
+      if (remainingHeight > 0) {
+        pdf.addPage();
+        position = 0;
+      }
+    }
+  
+    pdf.save("travelmate-trip.pdf");
+  };  
 
   useEffect(() => {
     if (!trip) return;
@@ -156,17 +236,24 @@ export default function TripDetailsPage() {
 
   return (
     <Container sx={{ mt: 6, pb: 8 }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Trip to {destination}
-      </Typography>
+      <Box sx={{ textAlign: "right", mb: 2 }}>
+        <Button variant="contained" onClick={handleOpenPreview}>
+          View Preview
+        </Button>
+      </Box>
+      <div id="trip-content">
+        <Typography variant="h4" fontWeight="bold" gutterBottom>
+          Trip to {destination}
+        </Typography>
 
-      <Typography variant="subtitle1" gutterBottom>
-        {trip.startDate} → {trip.endDate}
-      </Typography>
+        <Typography variant="subtitle1" gutterBottom>
+          {trip.startDate} → {trip.endDate}
+        </Typography>
 
-      <Typography variant="subtitle2" gutterBottom>
-        Activities: {activities?.join(", ") || "None"}
-      </Typography>
+        <Typography variant="subtitle2" gutterBottom>
+          Activities:{" "}
+          {Array.isArray(trip.activities) ? trip.activities.join(", ") : "None"}
+        </Typography>
 
       <Box sx={{ my: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
         <Button
@@ -223,6 +310,7 @@ export default function TripDetailsPage() {
                     <img
                       src={getWeatherIconUrl(day.values.weatherCodeMax)}
                       alt="icon"
+                      crossOrigin="anonymous"
                       style={{ width: 60, height: 60, objectFit: "contain" }}
                     />
                   </Box>
@@ -251,24 +339,6 @@ export default function TripDetailsPage() {
         </Box>
       ) : null}
 
-      {climateData.length > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Climate Trends ({unit})
-          </Typography>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={climateData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="High" fill="#f57c00" />
-              <Bar dataKey="Low" fill="#42a5f5" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Box>
-      )}
-
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
           Packing List
@@ -296,6 +366,29 @@ export default function TripDetailsPage() {
         </Typography>
         <ReactMarkdown>{travelTips}</ReactMarkdown>
       </Paper>
+    </div>
+    <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullWidth maxWidth="md">
+        <DialogTitle>Trip Preview</DialogTitle>
+        <DialogContent>
+          {previewImage && (
+            <Box sx={{ textAlign: "center", mt: 2 }}>
+              <img
+                src={previewImage}
+                alt="Trip Preview"
+                style={{ maxWidth: "100%", borderRadius: "8px" }}
+              />
+            </Box>
+          )}
+        </DialogContent>
+
+        <Box sx={{ position: "absolute", bottom: 16, right: 24 }}>
+          <Tooltip title="Download">
+            <Fab color="primary" onClick={handleDownloadPDF}>
+              <DownloadIcon />
+            </Fab>
+          </Tooltip>
+        </Box>
+      </Dialog>
     </Container>
   );
 }
