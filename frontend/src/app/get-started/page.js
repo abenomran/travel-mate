@@ -102,12 +102,20 @@ export default function GetStarted() {
     try {
       const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
       const location = encodeURIComponent(destination.trim());
+      const startDateISO = new Date(startDate).toISOString();
+  
       const response = await fetch(
-        `https://api.tomorrow.io/v4/weather/forecast?location=${location}&apikey=${apiKey}`
+        `https://api.tomorrow.io/v4/weather/forecast?location=${location}&apikey=${apiKey}&startTime=${startDateISO}`
       );
+  
       if (!response.ok) throw new Error("City not found or API rate limit reached.");
       const data = await response.json();
-      setForecast(data.timelines.daily.slice(0, 5));
+  
+      const filteredForecast = data.timelines.daily.filter(
+        (day) => new Date(day.time) >= new Date(startDate)
+      );
+  
+      setForecast(filteredForecast.slice(0, 9)); 
       setError("");
     } catch (err) {
       setError(err.message || "Unable to fetch weather data.");
@@ -177,11 +185,29 @@ export default function GetStarted() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+  
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); 
+    const tripStartDate = new Date(startDate);
+  
+    const maxDate = new Date();
+    maxDate.setDate(today.getDate() + 5);
+  
     if (!destination || !startDate) {
       setError("Please enter destination and trip dates.");
       return;
     }
-
+  
+    if (tripStartDate < today) {
+      setError("Start date cannot be in the past.");
+      return;
+    }
+  
+    if (tripStartDate > maxDate) {
+      setError("Start date is too far in the future. Please select a date within the next 5 days to get a weather forecast.");
+      return;
+    }
+  
     if (isTripSoon()) {
       fetchWeather();
     } else {
@@ -189,6 +215,7 @@ export default function GetStarted() {
       fetchClimateAverages();
     }
   };
+    
 
   const convertTemp = (tempC) =>
     unit === "C" ? `${tempC}°C` : `${((tempC * 9) / 5 + 32).toFixed(1)}°F`;
