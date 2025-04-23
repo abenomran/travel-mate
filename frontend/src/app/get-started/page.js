@@ -38,7 +38,6 @@ export default function GetStarted() {
   const isValidDestination = destination.split(",").length >= 3;
   const debouncedDestination = useDebounce(destination, 300); // 300ms delay
 
-
   // Fetch city autocomplete options
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -63,7 +62,9 @@ export default function GetStarted() {
       try {
         const db = getFirestore(app);
         const querySnapshot = await getDocs(collection(db, "activities"));
-        const activityList = querySnapshot.docs.map((doc) => doc.data().name);
+        const activityList = querySnapshot.docs
+          .map((doc) => doc.data().name)
+          .sort((a, b) => a.localeCompare(b)); // alphabetically sort activities
         setActivities(activityList);
       } catch (err) {
         console.error("Error fetching activities:", err);
@@ -92,7 +93,12 @@ export default function GetStarted() {
   return (
     <Box sx={{ backgroundColor: "#F9FAFB", minHeight: "100vh", py: 6 }}>
       <Container maxWidth="sm">
-        <Typography variant="h4" fontWeight="bold" textAlign="center" gutterBottom>
+        <Typography
+          variant="h4"
+          fontWeight="bold"
+          textAlign="center"
+          gutterBottom
+        >
           Plan Your Trip
         </Typography>
 
@@ -104,7 +110,12 @@ export default function GetStarted() {
             onInputChange={(e, value) => setDestination(value || "")}
             onChange={(e, value) => value && setDestination(value)}
             renderInput={(params) => (
-              <TextField {...params} label="Destination" required sx={{ mb: 2 }} />
+              <TextField
+                {...params}
+                label="Destination"
+                required
+                sx={{ mb: 2 }}
+              />
             )}
           />
 
@@ -132,19 +143,38 @@ export default function GetStarted() {
           <Typography variant="subtitle1" sx={{ mb: 1 }}>
             Select Activities:
           </Typography>
-          <ToggleButtonGroup
-            value={selectedActivities}
-            onChange={(e, val) => setSelectedActivities(val)}
-            fullWidth
-            aria-label="activity selection"
-            sx={{ flexWrap: "wrap", mb: 3 }}
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 1,
+              mb: 3,
+            }}
           >
             {activities.map((activity) => (
-              <ToggleButton key={activity} value={activity} sx={{ m: 0.5 }}>
+              <ToggleButton
+                key={activity}
+                value={activity}
+                selected={selectedActivities.includes(activity)}
+                onChange={() => {
+                  setSelectedActivities((prev) =>
+                    prev.includes(activity)
+                      ? prev.filter((a) => a !== activity)
+                      : [...prev, activity]
+                  );
+                }}
+                size="small"
+                sx={{
+                  fontSize: "0.75rem",
+                  px: 1.5,
+                  py: 0.5,
+                  minWidth: "auto",
+                }}
+              >
                 {activity}
               </ToggleButton>
             ))}
-          </ToggleButtonGroup>
+          </Box>
 
           {error && (
             <Typography color="error" sx={{ mb: 2 }}>
@@ -158,7 +188,11 @@ export default function GetStarted() {
             fullWidth
             disabled={loading || !isValidDestination}
           >
-            {loading ? <CircularProgress size={24} /> : "Next: Get Packing List"}
+            {loading ? (
+              <CircularProgress size={24} />
+            ) : (
+              "Next: Get Packing List"
+            )}
           </Button>
         </form>
       </Container>
