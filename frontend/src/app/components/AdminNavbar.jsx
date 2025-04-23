@@ -27,9 +27,11 @@ const AdminNavbar = () => {
       <Toolbar sx={{ justifyContent: "space-between" }}>
         {/* Left: Logo + Links */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography variant="h6" component="div" sx={{ color: "#FFFFFF" }}>
-            ADMIN
-          </Typography>
+          <Link href="/admin" passHref>
+            <Typography variant="h6" component="div" sx={{ color: "#FFFFFF" }}>
+              ADMIN
+            </Typography>
+          </Link>
 
           <Link href="/" passHref>
             <Button
@@ -86,7 +88,6 @@ const AdminNavbar = () => {
               Activities
             </Button>
           </Link>
-
 
           <Link href="/admin/reminder" passHref>
             <Button
