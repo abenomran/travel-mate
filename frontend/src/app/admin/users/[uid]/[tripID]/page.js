@@ -1,11 +1,27 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, getDoc, collection, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  collection,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import { db } from "@/app/firebase";
 import {
-  Container, Typography, CircularProgress, Paper,
-  TextField, Button, Stack, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+  Container,
+  Typography,
+  CircularProgress,
+  Paper,
+  TextField,
+  Button,
+  Stack,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import ReactMarkdown from "react-markdown";
 import { useAdminCheck } from "@/app/hooks/CheckAdmin";
@@ -74,7 +90,10 @@ export default function TripDetailsPage() {
   };
 
   const handleActivitiesChange = (e) => {
-    setEditTrip({ ...editTrip, activities: e.target.value.split(",").map(s => s.trim()) });
+    setEditTrip({
+      ...editTrip,
+      activities: e.target.value.split(",").map((s) => s.trim()),
+    });
   };
 
   const handleSave = async () => {
@@ -115,10 +134,17 @@ export default function TripDetailsPage() {
             trip.destination
           )}
         </Typography>
-        <Button variant={editMode ? "contained" : "outlined"} onClick={() => setEditMode(!editMode)}>
+        <Button
+          variant={editMode ? "contained" : "outlined"}
+          onClick={() => setEditMode(!editMode)}
+        >
           {editMode ? "Cancel" : "Edit"}
         </Button>
-        <Button color="error" variant="outlined" onClick={() => setDeleteDialogOpen(true)}>
+        <Button
+          color="error"
+          variant="outlined"
+          onClick={() => setDeleteDialogOpen(true)}
+        >
           Delete Trip
         </Button>
       </Stack>
@@ -155,14 +181,20 @@ export default function TripDetailsPage() {
         Activities:{" "}
         {editMode ? (
           <TextField
-            value={Array.isArray(editTrip.activities) ? editTrip.activities.join(", ") : ""}
+            value={
+              Array.isArray(editTrip.activities)
+                ? editTrip.activities.join(", ")
+                : ""
+            }
             onChange={handleActivitiesChange}
             variant="outlined"
             size="small"
             sx={{ minWidth: 300 }}
           />
+        ) : Array.isArray(trip.activities) ? (
+          trip.activities.join(", ")
         ) : (
-          Array.isArray(trip.activities) ? trip.activities.join(", ") : "None"
+          "None"
         )}
       </Typography>
 
@@ -200,6 +232,25 @@ export default function TripDetailsPage() {
         ) : (
           <Typography>
             <ReactMarkdown>{trip.clothingSuggestions}</ReactMarkdown>
+          </Typography>
+        )}
+      </Paper>
+
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+          Local Etiquette
+        </Typography>
+        {editMode ? (
+          <TextField
+            value={editTrip.localEtiquette}
+            onChange={handleEditChange("localEtiquette")}
+            multiline
+            minRows={4}
+            fullWidth
+          />
+        ) : (
+          <Typography>
+            <ReactMarkdown>{trip.localEssentials}</ReactMarkdown>
           </Typography>
         )}
       </Paper>
@@ -247,22 +298,34 @@ export default function TripDetailsPage() {
           <Button variant="contained" color="primary" onClick={handleSave}>
             Save Changes
           </Button>
-          <Button variant="outlined" onClick={() => { setEditTrip(trip); setEditMode(false); }}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setEditTrip(trip);
+              setEditMode(false);
+            }}
+          >
             Cancel
           </Button>
         </Stack>
       )}
 
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
         <DialogTitle>Delete Trip</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this trip? This action cannot be undone.
+            Are you sure you want to delete this trip? This action cannot be
+            undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error">Delete</Button>
+          <Button onClick={handleDelete} color="error">
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>
