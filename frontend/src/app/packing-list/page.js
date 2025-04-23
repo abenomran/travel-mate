@@ -24,6 +24,7 @@ export default function PackingListPage() {
 
   const [packingList, setPackingList] = useState("");
   const [travelTips, setTravelTips] = useState("");
+  const [localEtiquette, setLocalEtiquette] = useState("");
   const [localEssentials, setLocalEssentials] = useState("");
   const [clothingSuggestions, setClothingSuggestions] = useState("");
   const [loading, setLoading] = useState(true);
@@ -55,6 +56,8 @@ export default function PackingListPage() {
 
         setPackingList(data.packingList || "No packing list returned.");
         setTravelTips(data.travelTips || "No travel tips available.");
+        setLocalEtiquette(
+          data.localEtiquette || "No local etiquette provided.");
         setLocalEssentials(
           data.localEssentials || "No local essentials listed."
         );
@@ -98,6 +101,7 @@ export default function PackingListPage() {
         activities,
         packingList,
         travelTips,
+        localEtiquette,
         localEssentials,
         clothingSuggestions,
         createdAt: serverTimestamp(),
@@ -167,6 +171,15 @@ export default function PackingListPage() {
                 Clothing Suggestions
               </Typography>
               <ReactMarkdown>{clothingSuggestions}</ReactMarkdown>
+            </Paper>
+
+            <Divider sx={{ my: 4 }} />
+
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Local Etiquette
+              </Typography>
+              <ReactMarkdown>{localEtiquette}</ReactMarkdown>
             </Paper>
 
             <Divider sx={{ my: 4 }} />

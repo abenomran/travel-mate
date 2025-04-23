@@ -231,6 +231,7 @@ export default function TripDetailsPage() {
     packingList,
     clothingSuggestions,
     localEssentials,
+    localEtiquette,
     travelTips,
   } = trip;
 
@@ -351,6 +352,13 @@ export default function TripDetailsPage() {
           Clothing Suggestions
         </Typography>
         <ReactMarkdown>{clothingSuggestions}</ReactMarkdown>
+      </Paper>
+
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+          Local Etiquette
+        </Typography>
+        <ReactMarkdown>{localEtiquette}</ReactMarkdown>
       </Paper>
 
       <Paper sx={{ p: 3, mb: 3 }}>

@@ -42,26 +42,24 @@ export async function POST(req) {
     
     const travelTipsPrompt = `Give brief travel tips for ${destination} (max 100 words). Focus on navigation, transport, and food. Bullet point format with bolded headings. Dont provide a heading that says "Travel Tips".`;
     
-    const localEssentialsPrompt = `List key local essentials for visiting ${destination}. Keep it under 100 words. Bullet point format with bolded headings. Dont provide a heading that says "Local Essentials". Don't say "Okay here are some".`;
+    const localEssentialsPrompt = `List important local items (e.g., power adapters, currency) for visiting ${destination}. Keep it under 100 words. Bullet point format with bolded headings. Dont provide a heading that says "Local Essentials". Don't say "Okay here are some".`;
     
     const clothingSuggestionsPrompt = `Suggest clothing for a ${duration}-day trip to ${destination} with activities: ${activities.join(", ")}. Bullet point format with bolded headings. Be concise (max 100 words). Dont provide a heading that says "Clothing Suggestions". Make sure to mention cultural norms and manners. Mention the average climate there.`;
 
-    const thingsToDoPrompt = `List top local activities in ${destination} related to: ${activities.join(", ")}. Keep it under 100 words. Bullet format with bolded headings. Do not include a heading.
-Keep the suggestions practical and tailored to the region. Use bullet points with **bolded category names** and don't include a heading that says "Things to Do".
-Maximum 100 words.`;
+    const localEtiquettePrompt = `Provide local etiquette tips for ${destination}. Keep it under 100 words. Bullet point format with bolded headings. Dont provide a heading that says "Local Etiquette".`;
 
-    const thingsToDo = await generateSectionContent(thingsToDoPrompt);
+    const localEtiquette = await generateSectionContent(localEtiquettePrompt);
     const packingList = await generateSectionContent(packingListPrompt);
     const travelTips = await generateSectionContent(travelTipsPrompt);
     const localEssentials = await generateSectionContent(localEssentialsPrompt);
     const clothingSuggestions = await generateSectionContent(clothingSuggestionsPrompt);
-    
+
     return NextResponse.json({
       packingList,
       travelTips,
       localEssentials,
       clothingSuggestions,
-      thingsToDo,
+      localEtiquette,
     });
   } catch (err) {
     console.error("Gemini API error:", err);
