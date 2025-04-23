@@ -43,18 +43,15 @@ const theme = createTheme({
 const steps = [
   {
     label: "Enter Destination",
-    path: "/get-started",
     image:
       "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSrwt-QkdEOYV_1H1c6MZtPyEYDycUKsH_LA&s",
   },
   {
     label: "Plan Activities",
-    path: "/get-started",
     image: "https://assets.hvmag.com/2024/05/zipline-guide-1068x712.jpg",
   },
   {
     label: "Receive Packing List",
-    path: "/get-started",
     image:
       "https://res.cloudinary.com/tripactions/image/upload/f_auto/q_auto/v1675108641/cms/blogs/6_Packing_Tips_for_Bleisure_Trips_p8quac.webp",
   },
@@ -140,11 +137,11 @@ export default function Home() {
           <Grid container spacing={5}>
             {steps.map((step, idx) => (
               <Grid item xs={12} sm={6} md={4} key={idx}>
-                <Link href={step.path} passHref legacyBehavior>
                   <Card
                     component="a"
                     sx={{
                       height: "100%",
+                      width: "350px",
                       display: "flex",
                       flexDirection: "column",
                       textDecoration: "none",
@@ -177,7 +174,6 @@ export default function Home() {
                       </Typography>
                     </CardContent>
                   </Card>
-                </Link>
               </Grid>
             ))}
           </Grid>
