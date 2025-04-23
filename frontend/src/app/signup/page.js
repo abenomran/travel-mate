@@ -93,9 +93,20 @@ export default function SignUp(props) {
       setEmailErrorMessage("");
     }
 
-    if (!password.value || password.value.length < 6) {
+    // strict password checking
+    if (
+      !password.value ||
+      password.value.length < 8 ||
+      !/[a-z]/.test(password.value) ||
+      !/[A-Z]/.test(password.value) ||
+      !/\d/.test(password.value) ||
+      !/[!@#$%^&*(),.?":{}|<>]/.test(password.value) ||
+      /(.)\1\1/.test(password.value) // catches any character repeated 3+ times
+    ) {
       setPasswordError(true);
-      setPasswordErrorMessage("Password must be at least 6 characters long.");
+      setPasswordErrorMessage(
+        "Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character. Overly repeated characters are not allowed."
+      );
       isValid = false;
     } else {
       setPasswordError(false);
@@ -127,7 +138,6 @@ export default function SignUp(props) {
         password
       );
 
-
       // created and signed in
       const user = userCredential.user;
       const db = getFirestore();
@@ -135,7 +145,7 @@ export default function SignUp(props) {
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
         createdAt: new Date(),
-        role: "user"
+        role: "user",
       });
       console.log("User created and signed in:", user);
       console.log("auth.currentUser:", auth.currentUser);
@@ -220,11 +230,11 @@ export default function SignUp(props) {
         <Typography sx={{ textAlign: "center" }}>
           Already have an account?{" "}
           <NextLink href="/signin" passHref>
-            <Link 
-              component = {NextLink}
-              href = "/signin"
-              variant = "body2"
-              underline = "hover"
+            <Link
+              component={NextLink}
+              href="/signin"
+              variant="body2"
+              underline="hover"
             >
               Sign in
             </Link>
