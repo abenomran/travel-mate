@@ -49,12 +49,17 @@ const getWeatherIconUrl = (code) => {
 
 const buildGoogleCalendarUrl = ({ destination, startDate, endDate }) => {
   const formatDate = (d) =>
-    new Date(d).toISOString().replace(/[-:]|(\.\d{3})/g, "").slice(0, 15);
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+    new Date(d)
+      .toISOString()
+      .replace(/[-:]|(\.\d{3})/g, "")
+      .slice(0, 15);
+  return (
+    `https://calendar.google.com/calendar/render?action=TEMPLATE` +
     `&text=Trip+to+${encodeURIComponent(destination)}` +
     `&dates=${formatDate(startDate)}/${formatDate(endDate)}` +
     `&details=${encodeURIComponent("Planned using BrainBridge!")}` +
-    `&location=${encodeURIComponent(destination)}`;
+    `&location=${encodeURIComponent(destination)}`
+  );
 };
 
 export default function TripDetailsPage() {
@@ -66,7 +71,9 @@ export default function TripDetailsPage() {
   const [previewImage, setPreviewImage] = useState(null);
   const [forecast, setForecast] = useState([]);
   const [unit, setUnit] = useState("C");
-  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const [timezone, setTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone
+  );
   const [isTooFarOut, setIsTooFarOut] = useState(false);
 
   useEffect(() => {
@@ -95,7 +102,10 @@ export default function TripDetailsPage() {
 
   const handleOpenPreview = async () => {
     const element = document.getElementById("trip-content");
-    const canvas = await html2canvas(element, { scale: 2 });
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true, // Ensures CORS is handled properly
+    });
     const imgData = canvas.toDataURL("image/png");
     setPreviewImage(imgData);
     setPreviewOpen(true);
@@ -103,67 +113,74 @@ export default function TripDetailsPage() {
 
   const handleDownloadPDF = async () => {
     const element = document.getElementById("trip-content");
-    const canvas = await html2canvas(element, { scale: 2 });
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true, // Ensures CORS is handled properly
+    });
     const imgData = canvas.toDataURL("image/png");
-  
+
     const pdf = new jsPDF("p", "mm", "a4");
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-  
+
     const imgProps = pdf.getImageProperties(imgData);
     const imgWidth = pdfWidth;
     const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-  
+
     const canvasHeight = canvas.height;
     const canvasWidth = canvas.width;
-  
+
     // Scale factor between px and mm
     const ratio = imgWidth / canvasWidth;
-  
+
     // Height in px of one PDF page (after header space)
     const pageHeightPx = (pdfHeight - 20) / ratio;
-  
+
     let position = 20;
-  
+
     pdf.setFontSize(14);
     const Msg = `Hey! I'm planning a trip to ${trip.destination} using TravelMate.`;
     pdf.text(Msg, 10, 15);
-  
+
     let pageCanvas, pageCtx, imgChunk;
     let remainingHeight = canvasHeight;
     let offset = 0;
-  
+
     while (remainingHeight > 0) {
       const sliceHeight = Math.min(pageHeightPx, remainingHeight);
-  
+
       // Create new canvas for the slice
       pageCanvas = document.createElement("canvas");
       pageCanvas.width = canvasWidth;
       pageCanvas.height = sliceHeight;
-  
+
       pageCtx = pageCanvas.getContext("2d");
       pageCtx.drawImage(
         canvas,
-        0, offset, // source x, y
-        canvasWidth, sliceHeight, // source width, height
-        0, 0, // destination x, y
-        canvasWidth, sliceHeight // destination width, height
+        0,
+        offset, // source x, y
+        canvasWidth,
+        sliceHeight, // source width, height
+        0,
+        0, // destination x, y
+        canvasWidth,
+        sliceHeight // destination width, height
       );
-  
+
       imgChunk = pageCanvas.toDataURL("image/png");
       pdf.addImage(imgChunk, "PNG", 0, position, imgWidth, sliceHeight * ratio);
-  
+
       remainingHeight -= sliceHeight;
       offset += sliceHeight;
-  
+
       if (remainingHeight > 0) {
         pdf.addPage();
         position = 0;
       }
     }
-  
+
     pdf.save("travelmate-trip.pdf");
-  };  
+  };
 
   useEffect(() => {
     if (!trip) return;
@@ -178,13 +195,14 @@ export default function TripDetailsPage() {
 
       const fiveDaysFromNow = new Date(now.getTime() + 5 * MS_PER_DAY);
 
-      const isSoon =
-        end >= now && start <= fiveDaysFromNow;
+      const isSoon = end >= now && start <= fiveDaysFromNow;
 
       if (isSoon) {
         try {
           const response = await fetch(
-            `https://api.tomorrow.io/v4/weather/forecast?location=${location}&apikey=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}&startTime=${start.toISOString()}&endTime=${end.toISOString()}`
+            `https://api.tomorrow.io/v4/weather/forecast?location=${location}&apikey=${
+              process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY
+            }&startTime=${start.toISOString()}&endTime=${end.toISOString()}`
           );
           const data = await response.json();
           setTimezone(data.location.tz);
@@ -256,126 +274,135 @@ export default function TripDetailsPage() {
           {Array.isArray(trip.activities) ? trip.activities.join(", ") : "None"}
         </Typography>
 
-      <Box sx={{ my: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
-        <Button
-          variant="outlined"
-          href={buildGoogleCalendarUrl({ destination, startDate, endDate })}
-          target="_blank"
-        >
-          Add to Google Calendar
-        </Button>
+        <Box sx={{ my: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <Button
+            variant="outlined"
+            href={buildGoogleCalendarUrl({ destination, startDate, endDate })}
+            target="_blank"
+          >
+            Add to Google Calendar
+          </Button>
 
-        <ToggleButtonGroup
-          value={unit}
-          exclusive
-          onChange={(e, newUnit) => newUnit && setUnit(newUnit)}
-          size="small"
-          sx={{ ml: "auto" }}
-        >
-          <ToggleButton value="C">°C</ToggleButton>
-          <ToggleButton value="F">°F</ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
+          <ToggleButtonGroup
+            value={unit}
+            exclusive
+            onChange={(e, newUnit) => newUnit && setUnit(newUnit)}
+            size="small"
+            sx={{ ml: "auto" }}
+          >
+            <ToggleButton value="C">°C</ToggleButton>
+            <ToggleButton value="F">°F</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
 
-      <Divider sx={{ my: 3 }} />
+        <Divider sx={{ my: 3 }} />
 
-      {forecast.length > 0 ? (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            5-Day Weather Forecast ({unit})
-          </Typography>
+        {forecast.length > 0 ? (
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" fontWeight="bold" gutterBottom>
+              Weather Forecast ({unit})
+            </Typography>
 
-          <Box sx={{ overflowX: "auto", whiteSpace: "nowrap", mt: 2 }}>
-            <Box sx={{ display: "flex", gap: 2 }}>
-              {forecast.map((day, idx) => (
-                <Paper
-                  key={idx}
-                  sx={{
-                    minWidth: 180,
-                    maxWidth: 180,
-                    flexShrink: 0,
-                    p: 2,
-                    borderRadius: 3,
-                    textAlign: "center",
-                  }}
-                >
-                  <Typography fontWeight="bold" sx={{ mb: 1 }}>
-                    {new Date(day.time).toLocaleDateString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      timeZone: timezone,
-                    })}
-                  </Typography>
-                  <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-                    <img
-                      src={getWeatherIconUrl(day.values.weatherCodeMax)}
-                      alt="icon"
-                      crossOrigin="anonymous"
-                      style={{ width: 60, height: 60, objectFit: "contain" }}
-                    />
-                  </Box>
-                  <Typography fontWeight="bold">
-                    H: {convertTemp(day.values.temperatureMax)} / L: {convertTemp(day.values.temperatureMin)}
-                  </Typography>
-                  <Typography variant="body2">
-                    💧 {day.values.precipitationProbabilityAvg ?? 0}%
-                  </Typography>
-                  <Typography variant="body2">
-                    🌬 {day.values.windSpeedAvg} m/s
-                  </Typography>
-                </Paper>
-              ))}
+            <Box sx={{ overflowX: "auto", whiteSpace: "nowrap", mt: 2 }}>
+              <Box sx={{ display: "flex", gap: 2 }}>
+                {forecast.map((day, idx) => (
+                  <Paper
+                    key={idx}
+                    sx={{
+                      minWidth: 180,
+                      maxWidth: 180,
+                      flexShrink: 0,
+                      p: 2,
+                      borderRadius: 3,
+                      textAlign: "center",
+                    }}
+                  >
+                    <Typography fontWeight="bold" sx={{ mb: 1 }}>
+                      {new Date(day.time).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        timeZone: timezone,
+                      })}
+                    </Typography>
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", mb: 1 }}
+                    >
+                      <img
+                        src={getWeatherIconUrl(day.values.weatherCodeMax)}
+                        alt="icon"
+                        crossOrigin="anonymous"
+                        style={{ width: 60, height: 60, objectFit: "contain" }}
+                      />
+                    </Box>
+                    <Typography fontWeight="bold">
+                      H: {convertTemp(day.values.temperatureMax)} / L:{" "}
+                      {convertTemp(day.values.temperatureMin)}
+                    </Typography>
+                    <Typography variant="body2">
+                      💧 {day.values.precipitationProbabilityAvg ?? 0}%
+                    </Typography>
+                    <Typography variant="body2">
+                      🌬 {day.values.windSpeedAvg} m/s
+                    </Typography>
+                  </Paper>
+                ))}
+              </Box>
             </Box>
           </Box>
-        </Box>
-      ) : isTooFarOut ? (
-        <Box sx={{ mb: 4 }}>
+        ) : isTooFarOut ? (
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" fontWeight="bold" gutterBottom>
+              Weather Forecast Unavailable
+            </Typography>
+            <Typography variant="body2">
+              The trip dates are too far in the future or already passed to show
+              an accurate weather forecast.
+            </Typography>
+          </Box>
+        ) : null}
+
+        <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Weather Forecast Unavailable
+            Packing List
           </Typography>
-          <Typography variant="body2">
-            The trip dates are too far in the future or already passed to show an accurate weather forecast.
+          <ReactMarkdown>{packingList}</ReactMarkdown>
+        </Paper>
+
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Clothing Suggestions
           </Typography>
-        </Box>
-      ) : null}
+          <ReactMarkdown>{clothingSuggestions}</ReactMarkdown>
+        </Paper>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Packing List
-        </Typography>
-        <ReactMarkdown>{packingList}</ReactMarkdown>
-      </Paper>
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Local Etiquette
+          </Typography>
+          <ReactMarkdown>{localEtiquette}</ReactMarkdown>
+        </Paper>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Clothing Suggestions
-        </Typography>
-        <ReactMarkdown>{clothingSuggestions}</ReactMarkdown>
-      </Paper>
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Local Essentials
+          </Typography>
+          <ReactMarkdown>{localEssentials}</ReactMarkdown>
+        </Paper>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Local Etiquette
-        </Typography>
-        <ReactMarkdown>{localEtiquette}</ReactMarkdown>
-      </Paper>
-
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Local Essentials
-        </Typography>
-        <ReactMarkdown>{localEssentials}</ReactMarkdown>
-      </Paper>
-
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Travel Tips
-        </Typography>
-        <ReactMarkdown>{travelTips}</ReactMarkdown>
-      </Paper>
-    </div>
-    <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullWidth maxWidth="md">
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Travel Tips
+          </Typography>
+          <ReactMarkdown>{travelTips}</ReactMarkdown>
+        </Paper>
+      </div>
+      <Dialog
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        fullWidth
+        maxWidth="md"
+      >
         <DialogTitle>Trip Preview</DialogTitle>
         <DialogContent>
           {previewImage && (
