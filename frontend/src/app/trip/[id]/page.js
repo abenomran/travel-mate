@@ -328,7 +328,7 @@ export default function TripDetailsPage() {
     <Container sx={{ mt: 6, pb: 8 }}>
       <Box sx={{ textAlign: "right", mb: 2 }}>
         <Button variant="contained" onClick={handleOpenPreview}>
-          View Preview
+          Share Trip
         </Button>
       </Box>
       <div id="trip-content">
@@ -502,7 +502,7 @@ export default function TripDetailsPage() {
         fullWidth
         maxWidth="md"
       >
-        <DialogTitle>Trip Preview</DialogTitle>
+        <DialogTitle>Share Trip</DialogTitle>
         <DialogContent>
           {previewImage && (
             <Box sx={{ textAlign: "center", mt: 2 }}>
