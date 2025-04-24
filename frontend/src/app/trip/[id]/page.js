@@ -102,45 +102,76 @@ export default function TripDetailsPage() {
 
     const fetchWeatherOrClimate = async () => {
       const { destination, startDate, endDate } = trip;
+      
       const start = new Date(startDate);
+      start.setDate(start.getDate() + 1);
       const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
       const now = new Date();
       const MS_PER_DAY = 1000 * 60 * 60 * 24;
       const fiveDaysFromNow = new Date(now.getTime() + 5 * MS_PER_DAY);
-      const isWithinFiveDays = start <= fiveDaysFromNow;
 
-      if (isWithinFiveDays) {
-        try {
-          const location = encodeURIComponent(destination.trim());
-          const response = await fetch(
-            `https://api.tomorrow.io/v4/weather/forecast?location=${location}&apikey=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}&startTime=${start.toISOString()}&endTime=${end.toISOString()}`
-          );
-          const data = await response.json();
-          setTimezone(data.location?.tz || timezone);
-          const forecastSlice = data.timelines.daily.filter(
-            (d) => new Date(d.time) >= start
-          );
-          setForecast(forecastSlice.slice(0, 5));
-          setIsTooFarOut(false);
-        } catch (err) {
-          console.error("Failed to fetch forecast:", err);
-        }
-      } else {
-        try {
-          const coords = await getLatLon(destination);
-          const start2024 = new Date(start); start2024.setFullYear(2024);
-          const end2024 = new Date(end); end2024.setFullYear(2024);
-          const response = await fetch(
-            `/api/climate-averages?lat=${coords.lat}&lon=${coords.lon}&start=${start2024.toISOString().split("T")[0]}&end=${end2024.toISOString().split("T")[0]}`
-          );
-          const data = await response.json();
-          setClimateData(data);
-          setIsTooFarOut(true);
-        } catch (err) {
-          console.error("Failed to fetch climate data:", err);
+      let foundWithinFiveDays = false;
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        if (d >= now && d <= fiveDaysFromNow) {
+          foundWithinFiveDays = true;
+          break;
         }
       }
+
+      setIsTooFarOut(!foundWithinFiveDays);
+
+    
+      try {
+        const coords = await getLatLon(destination);
+    
+        // Fetch both in parallel
+        const [forecastRes, climateRes] = await Promise.all([
+          fetch(
+            `https://api.tomorrow.io/v4/weather/forecast?location=${encodeURIComponent(destination)}&apikey=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}`
+          ),
+          fetch(
+            `/api/climate-averages?lat=${coords.lat}&lon=${coords.lon}&start=${new Date(start).toISOString().split("T")[0]}&end=${new Date(end).toISOString().split("T")[0]}`
+          ),
+        ]);
+    
+        const forecastData = await forecastRes.json();
+        const climateData = await climateRes.json();
+    
+        setTimezone(forecastData.location?.tz || timezone);
+    
+        const forecastMap = {};
+        for (const d of forecastData.timelines.daily) {
+          forecastMap[new Date(d.time).toISOString().split("T")[0]] = d;
+        }
+    
+        const climateMap = {};
+        for (const d of climateData) {
+          const date = new Date(d.date);
+          date.setFullYear(new Date().getFullYear());
+          climateMap[date.toISOString().split("T")[0]] = d;
+        }
+    
+        const combined = [];
+        for (
+          let d = new Date(start);
+          d <= end;
+          d.setDate(d.getDate() + 1)
+        ) {
+          const isoDate = d.toISOString().split("T")[0];
+          if (d >= now && d <= fiveDaysFromNow && forecastMap[isoDate]) {
+            combined.push({ type: "forecast", data: forecastMap[isoDate], date: isoDate });
+          } else if (climateMap[isoDate]) {
+            combined.push({ type: "historical", data: climateMap[isoDate], date: isoDate });
+          }
+        }
+    
+        setForecast(combined);
+      } catch (err) {
+        console.error("Failed to fetch weather data:", err);
+      }
     };
+    
 
     fetchWeatherOrClimate();
   }, [trip]);
@@ -200,32 +231,10 @@ export default function TripDetailsPage() {
 
       <Divider sx={{ my: 3 }} />
 
-      {forecast.length > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" fontWeight="bold">5-Day Weather Forecast ({unit})</Typography>
-          <Box sx={{ display: "flex", gap: 2, overflowX: "auto", mt: 2 }}>
-            {forecast.map((day, idx) => (
-              <Paper key={idx} sx={{ minWidth: 180, p: 2, borderRadius: 3, textAlign: "center" }}>
-                <Typography fontWeight="bold" sx={{ mb: 1 }}>
-                  {new Date(day.time).toLocaleDateString("en-US", {
-                    weekday: "short", month: "short", day: "numeric", timeZone: timezone,
-                  })}
-                </Typography>
-                <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-                  <img src={getWeatherIconUrl(day.values.weatherCodeMax)} alt="icon" style={{ width: 60, height: 60 }} />
-                </Box>
-                <Typography fontWeight="bold">
-                  H: {convertTemp(day.values.temperatureMax)} / L: {convertTemp(day.values.temperatureMin)}
-                </Typography>
-                <Typography variant="body2">💧 {day.values.precipitationProbabilityAvg ?? 0}%</Typography>
-                <Typography variant="body2">🌬 {day.values.windSpeedAvg} m/s</Typography>
-              </Paper>
-            ))}
-          </Box>
-        </Box>
-      )}
-
-      {isTooFarOut && climateData.length > 0 && (
+{forecast.length > 0 && (
+  <Box sx={{ mb: 4 }}>
+    <Typography variant="h6" fontWeight="bold">Weather Forecast ({unit})</Typography>
+    {isTooFarOut && (
         <Box sx={{ mb: 4 }}>
         <Typography
         variant="h6"
@@ -235,31 +244,49 @@ export default function TripDetailsPage() {
           ⚠️ Weather Prediction Based on Historical Data
           </Typography>
           <Typography variant="body2" color="textSecondary">Based on archived data from the same dates in 2024.</Typography>
-          <Box sx={{ display: "flex", gap: 2, overflowX: "auto", mt: 2 }}>
-            {climateData.map((day, idx) => (
-              <Paper key={idx} sx={{ minWidth: 180, p: 2, borderRadius: 3, textAlign: "center" }}>
-                <Typography fontWeight="bold" sx={{ mb: 1 }}>
-                  {new Date(day.date).toLocaleDateString("en-US", {
-                    weekday: "short", month: "short", day: "numeric",
-                  })}
-                </Typography>
-                <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-                  <img
-                    src={getIconForHistoricalDay(Number(day.Precipitation), (Number(day.High) * 9) / 5 + 32)}
-                    alt="icon"
-                    style={{ width: 60, height: 60 }}
-                  />
-                </Box>
-                <Typography fontWeight="bold">
-                H: {convertTemp((day.High * 9) / 5 + 32)} / L: {convertTemp((day.Low * 9) / 5 + 32)}
-                </Typography>
-                <Typography variant="body2">💧 {day.Precipitation}</Typography>
-                <Typography variant="body2">🌬 {day.Wind} m/s</Typography>
-              </Paper>
-            ))}
-          </Box>
         </Box>
       )}
+    <Box sx={{ display: "flex", gap: 2, overflowX: "auto", mt: 2 }}>
+      {forecast.map((entry, idx) => (
+        <Paper key={idx} sx={{ minWidth: 180, p: 2, borderRadius: 3, textAlign: "center" }}>
+          <Typography fontWeight="bold" sx={{ mb: 1 }}>
+            {new Date(entry.date).toLocaleDateString("en-US", {
+              weekday: "short", month: "short", day: "numeric", timeZone: timezone,
+            })}
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+            <img
+              src={
+                entry.type === "forecast"
+                  ? getWeatherIconUrl(entry.data.values.weatherCodeMax)
+                  : getIconForHistoricalDay(Number(entry.data.Precipitation), (Number(entry.data.High) * 9) / 5 + 32)
+              }
+              alt="icon"
+              style={{ width: 60, height: 60 }}
+            />
+          </Box>
+          {entry.type === "forecast" ? (
+            <>
+              <Typography fontWeight="bold">
+                H: {convertTemp(entry.data.values.temperatureMax)} / L: {convertTemp(entry.data.values.temperatureMin)}
+              </Typography>
+              <Typography variant="body2">💧 {entry.data.values.precipitationProbabilityAvg ?? 0}%</Typography>
+              <Typography variant="body2">🌬 {entry.data.values.windSpeedAvg} m/s</Typography>
+            </>
+          ) : (
+            <>
+              <Typography fontWeight="bold">
+                H: {convertTemp((entry.data.High * 9) / 5 + 32)} / L: {convertTemp((entry.data.Low * 9) / 5 + 32)}
+              </Typography>
+              <Typography variant="body2">💧 {entry.data.Precipitation}</Typography>
+              <Typography variant="body2">🌬 {entry.data.Wind} m/s</Typography>
+            </>
+          )}
+        </Paper>
+      ))}
+    </Box>
+  </Box>
+)}
 
       <Paper sx={{ p: 3, mb: 3 }}><Typography variant="h6" fontWeight="bold">Packing List</Typography><ReactMarkdown>{packingList}</ReactMarkdown></Paper>
       <Paper sx={{ p: 3, mb: 3 }}><Typography variant="h6" fontWeight="bold">Clothing Suggestions</Typography><ReactMarkdown>{clothingSuggestions}</ReactMarkdown></Paper>
