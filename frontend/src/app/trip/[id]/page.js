@@ -324,205 +324,205 @@ export default function TripDetailsPage() {
     travelTips,
   } = trip;
 
+  const section = (title, content) => (
+    <Paper
+      elevation={2}
+      sx={{ p: 3, mt: 3, borderRadius: 2, bgcolor: 'background.paper' }}
+    >
+      <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
+        {title}
+      </Typography>
+      <ReactMarkdown>{content}</ReactMarkdown>
+    </Paper>
+  );
+
   return (
-    <Container sx={{ mt: 6, pb: 8 }}>
-      <Box sx={{ textAlign: "right", mb: 2 }}>
-        <Button variant="contained" onClick={handleOpenPreview}>
-          Share Trip
-        </Button>
-      </Box>
-      <div id="trip-content">
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Trip to {destination}
-        </Typography>
-
-        <Typography variant="subtitle1" gutterBottom>
-          {trip.startDate} → {trip.endDate}
-        </Typography>
-
-        <Typography variant="subtitle2" gutterBottom>
-          Activities:{" "}
-          {Array.isArray(trip.activities) ? trip.activities.join(", ") : "None"}
-        </Typography>
-
-        <Box sx={{ my: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
-          <Button
-            variant="outlined"
-            href={buildGoogleCalendarUrl({ destination, startDate, endDate })}
-            target="_blank"
-          >
-            Add to Google Calendar
-          </Button>
-
-          <ToggleButtonGroup
-            value={unit}
-            exclusive
-            onChange={(e, newUnit) => newUnit && setUnit(newUnit)}
-            size="small"
-            sx={{ ml: "auto" }}
-          >
-            <ToggleButton value="C">°C</ToggleButton>
-            <ToggleButton value="F">°F</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
-        {forecast.length > 0 && (
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" fontWeight="bold">
-              Weather Forecast ({unit})
+    <Box
+      sx={{
+        background: 'linear-gradient(135deg, rgb(216, 243, 250) 0%, rgb(178, 227, 255) 100%)',
+        minHeight: '100vh',
+        py: 8,
+      }}
+    >
+      <Container maxWidth="md">
+        <Paper elevation={4} sx={{ p: 4, borderRadius: 3 }}>
+          <Box sx={{ textAlign: "right", mb: 2 }}>
+            <Button variant="contained" onClick={handleOpenPreview}>
+              Share Trip
+            </Button>
+          </Box>
+          <div id="trip-content">
+            <Typography
+              variant="h4"
+              align="center"
+              sx={{ fontWeight: 'bold', color: '#333' }}
+              gutterBottom
+            >
+              Trip to {destination}
             </Typography>
-            {isTooFarOut && (
+            <Typography variant="subtitle1" align="center" sx={{ color: '#555' }}>
+              {startDate} → {endDate}
+            </Typography>
+            <Typography variant="body2" align="center" sx={{ color: '#777', mb: 2 }}>
+              {Array.isArray(activities) && activities.length
+                ? `Activities: ${activities.join(', ')}`
+                : 'No activities'}
+            </Typography>
+  
+            <Box sx={{ my: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
+              <Button
+                variant="outlined"
+                href={buildGoogleCalendarUrl({ destination, startDate, endDate })}
+                target="_blank"
+              >
+                Add to Google Calendar
+              </Button>
+              <ToggleButtonGroup
+                value={unit}
+                exclusive
+                onChange={(e, newUnit) => newUnit && setUnit(newUnit)}
+                size="small"
+                sx={{ ml: "auto" }}
+              >
+                <ToggleButton value="C">°C</ToggleButton>
+                <ToggleButton value="F">°F</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+  
+            <Divider sx={{ my: 3 }} />
+  
+            {forecast.length > 0 && (
               <Box sx={{ mb: 4 }}>
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                  sx={{
-                    backgroundColor: "#fff3cd",
-                    color: "#856404",
-                    px: 2,
-                    py: 1,
-                    borderRadius: 1,
-                  }}
-                >
-                  ⚠️ Weather Prediction Based on Historical Data
+                <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
+                  Weather Forecast ({unit})
                 </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Based on archived data from the same dates in 2024.
-                </Typography>
+                {isTooFarOut && (
+                  <Box sx={{ mb: 4 }}>
+                    <Typography
+                      variant="h6"
+                      fontWeight="bold"
+                      sx={{
+                        backgroundColor: "#fff3cd",
+                        color: "#856404",
+                        px: 2,
+                        py: 1,
+                        borderRadius: 1,
+                      }}
+                    >
+                      ⚠️ Weather Prediction Based on Historical Data
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Based on archived data from the same dates in 2024.
+                    </Typography>
+                  </Box>
+                )}
+                <Box sx={{ display: "flex", gap: 2, overflowX: "auto", mt: 2 }}>
+                  {forecast.map((entry, idx) => (
+                    <Paper
+                      key={idx}
+                      elevation={2}
+                      sx={{
+                        minWidth: 180,
+                        p: 2,
+                        borderRadius: 3,
+                        textAlign: "center",
+                        bgcolor: 'background.paper'
+                      }}
+                    >
+                      <Typography fontWeight="bold" sx={{ mb: 1 }}>
+                        {new Date(entry.date).toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          timeZone: timezone,
+                        })}
+                      </Typography>
+                      <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
+                        <img
+                          src={
+                            entry.type === "forecast"
+                              ? getWeatherIconUrl(entry.data.values.weatherCodeMax)
+                              : getIconForHistoricalDay(
+                                  Number(entry.data.Precipitation),
+                                  (Number(entry.data.High) * 9) / 5 + 32
+                                )
+                          }
+                          alt="icon"
+                          style={{ width: 60, height: 60 }}
+                        />
+                      </Box>
+                      {entry.type === "forecast" ? (
+                        <>
+                          <Typography fontWeight="bold">
+                            H: {convertTemp(entry.data.values.temperatureMax)} / L:{" "}
+                            {convertTemp(entry.data.values.temperatureMin)}
+                          </Typography>
+                          <Typography variant="body2">
+                            💧 {entry.data.values.precipitationProbabilityAvg ?? 0}%
+                          </Typography>
+                          <Typography variant="body2">
+                            🌬 {entry.data.values.windSpeedAvg} m/s
+                          </Typography>
+                        </>
+                      ) : (
+                        <>
+                          <Typography fontWeight="bold">
+                            H: {convertTemp((entry.data.High * 9) / 5 + 32)} / L:{" "}
+                            {convertTemp((entry.data.Low * 9) / 5 + 32)}
+                          </Typography>
+                          <Typography variant="body2">
+                            💧 {entry.data.Precipitation}
+                          </Typography>
+                          <Typography variant="body2">
+                            🌬 {entry.data.Wind} m/s
+                          </Typography>
+                        </>
+                      )}
+                    </Paper>
+                  ))}
+                </Box>
               </Box>
             )}
-            <Box sx={{ display: "flex", gap: 2, overflowX: "auto", mt: 2 }}>
-              {forecast.map((entry, idx) => (
-                <Paper
-                  key={idx}
-                  sx={{
-                    minWidth: 180,
-                    p: 2,
-                    borderRadius: 3,
-                    textAlign: "center",
-                  }}
-                >
-                  <Typography fontWeight="bold" sx={{ mb: 1 }}>
-                    {new Date(entry.date).toLocaleDateString("en-US", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      timeZone: timezone,
-                    })}
-                  </Typography>
-                  <Box
-                    sx={{ display: "flex", justifyContent: "center", mb: 1 }}
-                  >
-                    <img
-                      src={
-                        entry.type === "forecast"
-                          ? getWeatherIconUrl(entry.data.values.weatherCodeMax)
-                          : getIconForHistoricalDay(
-                              Number(entry.data.Precipitation),
-                              (Number(entry.data.High) * 9) / 5 + 32
-                            )
-                      }
-                      alt="icon"
-                      style={{ width: 60, height: 60 }}
-                    />
-                  </Box>
-                  {entry.type === "forecast" ? (
-                    <>
-                      <Typography fontWeight="bold">
-                        H: {convertTemp(entry.data.values.temperatureMax)} / L:{" "}
-                        {convertTemp(entry.data.values.temperatureMin)}
-                      </Typography>
-                      <Typography variant="body2">
-                        💧 {entry.data.values.precipitationProbabilityAvg ?? 0}%
-                      </Typography>
-                      <Typography variant="body2">
-                        🌬 {entry.data.values.windSpeedAvg} m/s
-                      </Typography>
-                    </>
-                  ) : (
-                    <>
-                      <Typography fontWeight="bold">
-                        H: {convertTemp((entry.data.High * 9) / 5 + 32)} / L:{" "}
-                        {convertTemp((entry.data.Low * 9) / 5 + 32)}
-                      </Typography>
-                      <Typography variant="body2">
-                        💧 {entry.data.Precipitation}
-                      </Typography>
-                      <Typography variant="body2">
-                        🌬 {entry.data.Wind} m/s
-                      </Typography>
-                    </>
-                  )}
-                </Paper>
-              ))}
+  
+            {section('Packing List', packingList)}
+            <Divider sx={{ my: 3 }} />
+            {section('Clothing Suggestions', clothingSuggestions)}
+            <Divider sx={{ my: 3 }} />
+            {section('Local Etiquette', localEtiquette)}
+            <Divider sx={{ my: 3 }} />
+            {section('Local Essentials', localEssentials)}
+            <Divider sx={{ my: 3 }} />
+            {section('Travel Tips', travelTips)}
+          </div>
+  
+          <Dialog
+            open={previewOpen}
+            onClose={() => setPreviewOpen(false)}
+            fullWidth
+            maxWidth="md"
+          >
+            <DialogTitle>Share Trip</DialogTitle>
+            <DialogContent>
+              {previewImage && (
+                <Box sx={{ textAlign: "center", mt: 2 }}>
+                  <img
+                    src={previewImage}
+                    alt="Trip Preview"
+                    style={{ maxWidth: "100%", borderRadius: "8px" }}
+                  />
+                </Box>
+              )}
+            </DialogContent>
+            <Box sx={{ position: "absolute", bottom: 16, right: 24 }}>
+              <Tooltip title="Download">
+                <Fab color="primary" onClick={handleDownloadPDF}>
+                  <DownloadIcon />
+                </Fab>
+              </Tooltip>
             </Box>
-          </Box>
-        )}
-
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Packing List
-          </Typography>
-          <ReactMarkdown>{packingList}</ReactMarkdown>
+          </Dialog>
         </Paper>
-
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Clothing Suggestions
-          </Typography>
-          <ReactMarkdown>{clothingSuggestions}</ReactMarkdown>
-        </Paper>
-
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Local Etiquette
-          </Typography>
-          <ReactMarkdown>{localEtiquette}</ReactMarkdown>
-        </Paper>
-
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Local Essentials
-          </Typography>
-          <ReactMarkdown>{localEssentials}</ReactMarkdown>
-        </Paper>
-
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Travel Tips
-          </Typography>
-          <ReactMarkdown>{travelTips}</ReactMarkdown>
-        </Paper>
-      </div>
-      <Dialog
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        fullWidth
-        maxWidth="md"
-      >
-        <DialogTitle>Share Trip</DialogTitle>
-        <DialogContent>
-          {previewImage && (
-            <Box sx={{ textAlign: "center", mt: 2 }}>
-              <img
-                src={previewImage}
-                alt="Trip Preview"
-                style={{ maxWidth: "100%", borderRadius: "8px" }}
-              />
-            </Box>
-          )}
-        </DialogContent>
-
-        <Box sx={{ position: "absolute", bottom: 16, right: 24 }}>
-          <Tooltip title="Download">
-            <Fab color="primary" onClick={handleDownloadPDF}>
-              <DownloadIcon />
-            </Fab>
-          </Tooltip>
-        </Box>
-      </Dialog>
-    </Container>
+      </Container>
+    </Box>
   );
 }

@@ -30,8 +30,6 @@ export default function PackingListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-
-
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -41,186 +39,135 @@ export default function PackingListPage() {
         const user = auth.currentUser;
         if (!user) throw new Error("User not authenticated");
 
-        const response = await fetch("/api/packing", {
+        const res = await fetch("/api/packing", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            destination,
-            startDate: start,
-            endDate: end,
-            activities,
-          }),
+          body: JSON.stringify({ destination, startDate: start, endDate: end, activities }),
         });
+        const data = await res.json();
 
-        const data = await response.json();
-
-        setPackingList(data.packingList || "No packing list returned.");
-        setTravelTips(data.travelTips || "No travel tips available.");
-        setLocalEtiquette(
-          data.localEtiquette || "No local etiquette provided.");
-        setLocalEssentials(
-          data.localEssentials || "No local essentials listed."
-        );
-        setClothingSuggestions(
-          data.clothingSuggestions || "No clothing suggestions provided."
-        );
+        setPackingList(data.packingList || "—");
+        setClothingSuggestions(data.clothingSuggestions || "—");
+        setLocalEtiquette(data.localEtiquette || "—");
+        setLocalEssentials(data.localEssentials || "—");
+        setTravelTips(data.travelTips || "—");
         setError("");
       } catch (err) {
-        console.log("Packing list error:", err);
-        setError("Failed to generate packing information. Try again later.");
+        console.error(err);
+        setError("Oops! Something went wrong.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (
-      !hasFetched.current &&
-      destination &&
-      start &&
-      end &&
-      activities.length > 0
-    ) {
+    if (!hasFetched.current && destination && start && end && activities.length) {
       hasFetched.current = true;
       fetchPackingData();
     }
   }, [destination, start, end, activities]);
 
-  const handleSaveTrip = async () => {
+  const handleSave = async () => {
     setSaving(true);
     setError("");
-
     try {
       const user = auth.currentUser;
-      if (!user) throw new Error("User not authenticated");
+      if (!user) throw new Error("Not signed in");
       const uid = user.uid;
-
       const tripData = {
         destination,
         startDate: start,
         endDate: end,
         activities,
         packingList,
-        travelTips,
+        clothingSuggestions,
         localEtiquette,
         localEssentials,
-        clothingSuggestions,
+        travelTips,
         createdAt: serverTimestamp(),
       };
-
-      const tripsRef = collection(doc(collection(db, "users"), uid), "trips");
-      const newTripDoc = await addDoc(tripsRef, tripData);
-
-      console.log("ID:", newTripDoc.id);
-      router.push(`/trip/${newTripDoc.id}`);
+      const userTrips = collection(doc(collection(db, "users"), uid), "trips");
+      const docRef = await addDoc(userTrips, tripData);
+      router.push(`/trip/${docRef.id}`);
     } catch (err) {
-      console.log("Save trip error:", err);
-      setError("Failed to save trip.");
+      console.error(err);
+      setError("Save failed. Try again.");
     } finally {
       setSaving(false);
     }
   };
 
+  const section = (title, content) => (
+    <Paper
+      elevation={2}
+      sx={{ p: 3, mt: 3, borderRadius: 2, bgcolor: 'background.paper' }}
+    >
+      <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
+        {title}
+      </Typography>
+      <ReactMarkdown>{content}</ReactMarkdown>
+    </Paper>
+  );
+
   return (
-    <Box sx={{ backgroundColor: "#F9FAFB", minHeight: "100vh", py: 6 }}>
+    <Box
+      sx={{
+        background: 'linear-gradient(135deg,rgb(216, 243, 250) 0%,rgb(178, 227, 255) 100%)',
+        minHeight: '100vh',
+        py: 8,
+      }}
+    >
       <Container maxWidth="md">
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Your Smart Trip Suggestions
-        </Typography>
-
-        <Typography variant="subtitle1" gutterBottom>
-          For your trip to{" "}
-          <Typography component="span" fontWeight="bold">
-            {destination}
-          </Typography>{" "}
-          from{" "}
-          <Typography component="span" fontWeight="bold">
-            {start}
-          </Typography>{" "}
-          to{" "}
-          <Typography component="span" fontWeight="bold">
-            {end}
+        <Paper elevation={4} sx={{ p: 4, borderRadius: 3 }}>
+          <Typography
+            variant="h4"
+            align="center"
+            sx={{ fontWeight: 'bold', color: '#333' }}
+            gutterBottom
+          >
+            Your Smart Trip Suggestions
           </Typography>
-        </Typography>
-
-        <Typography variant="subtitle2" gutterBottom>
-          Activities: {activities.join(", ") || "None selected"}
-        </Typography>
-
-        {loading ? (
-          <Box sx={{ textAlign: "center", mt: 4 }}>
-            <CircularProgress />
-            <Typography sx={{ mt: 2 }}>Generating your list...</Typography>
-          </Box>
-        ) : error ? (
-          <Typography color="error" sx={{ mt: 4 }}>
-            {error}
+          <Typography variant="subtitle1" align="center" sx={{ color: '#555' }}>
+            {`To ${destination} | ${start} → ${end}`}
           </Typography>
-        ) : (
-          <>
-            <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Packing List
-              </Typography>
-              <ReactMarkdown>{packingList}</ReactMarkdown>
-            </Paper>
+          <Typography variant="body2" align="center" sx={{ color: '#777', mb: 2 }}>
+            {activities.length ? `Activities: ${activities.join(', ')}` : 'No activities'}
+          </Typography>
 
-            <Divider sx={{ my: 4 }} />
+          {loading ? (
+            <Box sx={{ textAlign: 'center', mt: 4 }}>
+              <CircularProgress />
+              <Typography sx={{ mt: 2, color: '#555' }}>Preparing your suggestions…</Typography>
+            </Box>
+          ) : error ? (
+            <Typography color="error" sx={{ mt: 4, textAlign: 'center' }}>
+              {error}
+            </Typography>
+          ) : (
+            <>
+              {section('Packing List', packingList)}
+              <Divider sx={{ my: 3 }} />
+              {section('Clothing Suggestions', clothingSuggestions)}
+              <Divider sx={{ my: 3 }} />
+              {section('Local Etiquette', localEtiquette)}
+              <Divider sx={{ my: 3 }} />
+              {section('Local Essentials', localEssentials)}
+              <Divider sx={{ my: 3 }} />
+              {section('Travel Tips', travelTips)}
 
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Clothing Suggestions
-              </Typography>
-              <ReactMarkdown>{clothingSuggestions}</ReactMarkdown>
-            </Paper>
-
-            <Divider sx={{ my: 4 }} />
-
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Local Etiquette
-              </Typography>
-              <ReactMarkdown>{localEtiquette}</ReactMarkdown>
-            </Paper>
-
-            <Divider sx={{ my: 4 }} />
-
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Local Essentials
-              </Typography>
-              <ReactMarkdown>{localEssentials}</ReactMarkdown>
-            </Paper>
-
-            <Divider sx={{ my: 4 }} />
-
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Travel Tips
-              </Typography>
-              <ReactMarkdown>{travelTips}</ReactMarkdown>
-            </Paper>
-          </>
-        )}
-        {!loading && !error && (
-          <Box sx={{ mt: 4, textAlign: "center" }}>
-            <Button
-              onClick={handleSaveTrip}
-              disabled={saving}
-              style={{
-                padding: "12px 24px",
-                backgroundColor: "#1976d2",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "16px",
-                cursor: "pointer",
-                opacity: saving ? 0.6 : 1,
-              }}
-            >
-              {saving ? "Saving..." : "Save Trip"}
-            </Button>
-          </Box>
-        )}
+              <Box sx={{ textAlign: 'center', mt: 4 }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={handleSave}
+                  disabled={saving}
+                  sx={{ borderRadius: 2 }}
+                >
+                  {saving ? <CircularProgress size={24} /> : 'Save Trip'}
+                </Button>
+              </Box>
+            </>
+          )}
+        </Paper>
       </Container>
     </Box>
   );

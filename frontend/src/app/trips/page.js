@@ -10,6 +10,8 @@ import {
   ButtonBase,
   Box,
   Button,
+  Chip,
+  Stack
 } from "@mui/material";
 import Link from "next/link";
 import dayjs from "dayjs";
@@ -125,11 +127,28 @@ export default function Trips() {
                   {trip.destination}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {trip.startDate} → {trip.endDate}
+                  {dayjs(trip.startDate).format("MMM D, YYYY")}{" "}
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="primary"
+                    sx={{ mx: 0.5 }}
+                  >
+                    →
+                  </Typography>
+                  {dayjs(trip.endDate).format("MMM D, YYYY")}
                 </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  Activities: {trip.activities?.join(", ") || "None"}
-                </Typography>
+                {trip.activities?.length > 0 ? (
+                  <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ mt: 1 }}>
+                    {trip.activities.map((act) => (
+                      <Chip key={act} label={act} size="small" />
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: "italic" }}>
+                    No activities planned
+                  </Typography>
+                )}
               </ButtonBase>
             </Box>
           </Link>
@@ -139,7 +158,14 @@ export default function Trips() {
   );
 
   return (
-    <Container sx={{ mt: 6, mb: 6 }}>
+    <Box
+    sx={{
+      background: 'linear-gradient(135deg,rgb(216, 243, 250) 0%,rgb(178, 227, 255) 100%)',
+      minHeight: '100vh',
+      py: 8,
+    }}
+  >
+    <Container maxWidth="md">
       <Typography variant="h4" gutterBottom fontWeight="bold">
         Your Trips
       </Typography>
@@ -165,21 +191,22 @@ export default function Trips() {
             Upcoming Trips
           </Typography>
           {reminderMessage && upcomingTrips.length > 0 && (
-            <Typography
-              variant="body1"
-              sx={{
-                mb: 2,
-                color: "orange",
-                fontWeight: 500,
-                backgroundColor: "#fff7eb",
-                p: 1.5,
-                borderRadius: 1,
-                borderLeft: "4px solid orange",
-              }}
-            >
-              {reminderMessage}
-            </Typography>
-          )}
+          <Typography
+            variant="body1"
+            sx={{
+              mb: 2,
+              color: "#b34104",
+              fontWeight: 500,
+              backgroundColor: "#fff7eb",
+              p: 1.5,
+              borderRadius: 1,
+              borderLeft: "4px solid orange",
+              whiteSpace: "pre-line"   // ← preserves \n as line breaks
+            }}
+          >
+            {reminderMessage}
+          </Typography>
+        )}
           {upcomingTrips.length > 0 ? (
             renderTrips(upcomingTrips)
           ) : (
@@ -208,5 +235,6 @@ export default function Trips() {
         </>
       )}
     </Container>
+  </Box>
   );
 }

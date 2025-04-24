@@ -9,7 +9,7 @@ import {
   CircularProgress,
   Autocomplete,
   ToggleButton,
-  ToggleButtonGroup,
+  Paper,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
@@ -36,39 +36,33 @@ export default function GetStarted() {
   const [error, setError] = useState("");
 
   const isValidDestination = destination.split(",").length >= 3;
-  const debouncedDestination = useDebounce(destination, 300); // 300ms delay
+  const debouncedDestination = useDebounce(destination, 300);
 
-  // Fetch city autocomplete options
+  // City autocomplete
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (debouncedDestination.length < 2) return;
       try {
-        const response = await fetch(`/api/cities?q=${debouncedDestination}`);
-        const data = await response.json();
-        const options = data.data.map(
+        const res = await fetch(`/api/cities?q=${debouncedDestination}`);
+        const { data } = await res.json();
+        const opts = data.map(
           (city) => `${city.city}, ${city.regionCode}, ${city.countryCode}`
         );
-        setCityOptions(options.sort());
-      } catch (err) {
-        console.error("City autocomplete failed:", err);
+        setCityOptions(opts.sort());
+      } catch (e) {
+        console.error(e);
       }
     };
     fetchSuggestions();
   }, [debouncedDestination]);
 
-  // Fetch activities from Firebase
+  // Fetch activities
   useEffect(() => {
     const fetchActivities = async () => {
-      try {
-        const db = getFirestore(app);
-        const querySnapshot = await getDocs(collection(db, "activities"));
-        const activityList = querySnapshot.docs
-          .map((doc) => doc.data().name)
-          .sort((a, b) => a.localeCompare(b)); // alphabetically sort activities
-        setActivities(activityList);
-      } catch (err) {
-        console.error("Error fetching activities:", err);
-      }
+      const db = getFirestore(app);
+      const snap = await getDocs(collection(db, "activities"));
+      const list = snap.docs.map((d) => d.data().name).sort();
+      setActivities(list);
     };
     fetchActivities();
   }, []);
@@ -79,122 +73,123 @@ export default function GetStarted() {
       setError("Please complete all fields.");
       return;
     }
-
-    const query = new URLSearchParams({
+    setLoading(true);
+    const params = new URLSearchParams({
       destination,
       start: startDate,
       end: endDate,
       activities: selectedActivities.join(","),
-    }).toString();
-
-    router.push(`/packing-list?${query}`);
+    });
+    router.push(`/packing-list?${params}`);
   };
 
   return (
-    <Box sx={{ backgroundColor: "#F9FAFB", minHeight: "100vh", py: 6 }}>
+    <Box
+      sx={{
+        background: 'linear-gradient(135deg,rgb(216, 243, 250) 0%,rgb(178, 227, 255) 100%)',
+        minHeight: '100vh',
+        py: 8,
+      }}
+    >
       <Container maxWidth="sm">
-        <Typography
-          variant="h4"
-          fontWeight="bold"
-          textAlign="center"
-          gutterBottom
-        >
-          Plan Your Trip
-        </Typography>
-
-        <form onSubmit={handleSubmit}>
-          <Autocomplete
-            freeSolo
-            options={cityOptions}
-            inputValue={destination}
-            onInputChange={(e, value) => setDestination(value || "")}
-            onChange={(e, value) => value && setDestination(value)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Destination"
-                required
-                sx={{ mb: 2 }}
-              />
-            )}
-          />
-
-          <TextField
-            type="date"
-            fullWidth
-            required
-            label="Start Date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{ mb: 2 }}
-          />
-
-          <TextField
-            type="date"
-            fullWidth
-            label="End Date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            sx={{ mb: 3 }}
-          />
-
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
-            Select Activities:
+        <Paper elevation={4} sx={{ p: 4, borderRadius: 3 }}>
+          <Typography
+            variant="h3"
+            align="center"
+            gutterBottom
+            sx={{ fontWeight: 'bold', color: '#333' }}
+          >
+            Plan Your Trip
           </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 1,
-              mb: 3,
-            }}
-          >
-            {activities.map((activity) => (
-              <ToggleButton
-                key={activity}
-                value={activity}
-                selected={selectedActivities.includes(activity)}
-                onChange={() => {
-                  setSelectedActivities((prev) =>
-                    prev.includes(activity)
-                      ? prev.filter((a) => a !== activity)
-                      : [...prev, activity]
-                  );
-                }}
-                size="small"
-                sx={{
-                  fontSize: "0.75rem",
-                  px: 1.5,
-                  py: 0.5,
-                  minWidth: "auto",
-                }}
-              >
-                {activity}
-              </ToggleButton>
-            ))}
-          </Box>
 
-          {error && (
-            <Typography color="error" sx={{ mb: 2 }}>
-              {error}
+          <form onSubmit={handleSubmit} noValidate>
+            <Autocomplete
+              freeSolo
+              options={cityOptions}
+              inputValue={destination}
+              onInputChange={(_, val) => setDestination(val || "")}
+              onChange={(_, val) => val && setDestination(val)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Destination"
+                  variant="outlined"
+                  required
+                  fullWidth
+                  sx={{ mb: 3 }}
+                />
+              )}
+            />
+
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+              <TextField
+                label="Start Date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+              <TextField
+                label="End Date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+            </Box>
+
+            <Typography variant="subtitle1" sx={{ mb: 1, color: '#555' }}>
+              Select Activities
             </Typography>
-          )}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+              {activities.map((act) => (
+                <ToggleButton
+                  key={act}
+                  value={act}
+                  selected={selectedActivities.includes(act)}
+                  onChange={() => {
+                    setSelectedActivities((prev) =>
+                      prev.includes(act)
+                        ? prev.filter((a) => a !== act)
+                        : [...prev, act]
+                    );
+                  }}
+                  size="small"
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                    },
+                  }}
+                >
+                  {act}
+                </ToggleButton>
+              ))}
+            </Box>
 
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            disabled={loading || !isValidDestination}
-          >
-            {loading ? (
-              <CircularProgress size={24} />
-            ) : (
-              "Next: Get Packing List"
+            {error && (
+              <Typography color="error" sx={{ mb: 2 }}>
+                {error}
+              </Typography>
             )}
-          </Button>
-        </form>
+
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={loading || !isValidDestination}
+              sx={{ borderRadius: 2 }}
+            >
+              {loading ? <CircularProgress size={24} /> : 'Next ✓'}
+            </Button>
+          </form>
+        </Paper>
       </Container>
     </Box>
   );
