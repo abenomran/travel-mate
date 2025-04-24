@@ -47,6 +47,31 @@ const getWeatherIconUrl = (code) => {
   return icons[code] || icons[1000];
 };
 
+const getIconForHistoricalDay = (precip = 0, highTemp = 20) => {
+  const tempF = (highTemp * 9) / 5 + 32;
+
+  if (tempF > 60) {
+    if (precip > 1)
+      return "https://cdn-icons-png.flaticon.com/512/414/414974.png"; // Rainy
+    else return "https://cdn-icons-png.flaticon.com/512/869/869869.png"; // Sunny
+  } else {
+    return "https://cdn-icons-png.flaticon.com/512/642/642102.png"; // Snowy/Cold
+  }
+};
+
+const getLatLon = async (cityName) => {
+  const simplified = cityName.split(",")[0].trim();
+  const res = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+      simplified
+    )}`
+  );
+  const data = await res.json();
+  const result = data.results?.[0];
+  if (!result) throw new Error("Could not find location for: " + cityName);
+  return { lat: result.latitude, lon: result.longitude };
+};
+
 const buildGoogleCalendarUrl = ({ destination, startDate, endDate }) => {
   const formatDate = (d) =>
     new Date(d)
@@ -57,7 +82,7 @@ const buildGoogleCalendarUrl = ({ destination, startDate, endDate }) => {
     `https://calendar.google.com/calendar/render?action=TEMPLATE` +
     `&text=Trip+to+${encodeURIComponent(destination)}` +
     `&dates=${formatDate(startDate)}/${formatDate(endDate)}` +
-    `&details=${encodeURIComponent("Planned using BrainBridge!")}` +
+    `&details=${encodeURIComponent("Planned using TravelMate!")}` +
     `&location=${encodeURIComponent(destination)}`
   );
 };
@@ -70,7 +95,7 @@ export default function TripDetailsPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [forecast, setForecast] = useState([]);
-  const [unit, setUnit] = useState("C");
+  const [unit, setUnit] = useState("F");
   const [timezone, setTimezone] = useState(
     Intl.DateTimeFormat().resolvedOptions().timeZone
   );
@@ -187,42 +212,88 @@ export default function TripDetailsPage() {
 
     const fetchWeatherOrClimate = async () => {
       const { destination, startDate, endDate } = trip;
-      const location = encodeURIComponent(destination.trim());
+
       const start = new Date(startDate);
+      start.setDate(start.getDate() + 1);
       const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
       const now = new Date();
       const MS_PER_DAY = 1000 * 60 * 60 * 24;
-
       const fiveDaysFromNow = new Date(now.getTime() + 5 * MS_PER_DAY);
 
-      const isSoon = end >= now && start <= fiveDaysFromNow;
-
-      if (isSoon) {
-        try {
-          const response = await fetch(
-            `https://api.tomorrow.io/v4/weather/forecast?location=${location}&apikey=${
-              process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY
-            }&startTime=${start.toISOString()}&endTime=${end.toISOString()}`
-          );
-          const data = await response.json();
-          setTimezone(data.location.tz);
-          const forecastSlice = data.timelines.daily.filter(
-            (d) => new Date(d.time) >= start
-          );
-          setForecast(forecastSlice.slice(0, 5));
-        } catch (err) {
-          console.error("Failed to fetch weather:", err);
+      let foundWithinFiveDays = false;
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        if (d >= now && d <= fiveDaysFromNow) {
+          foundWithinFiveDays = true;
+          break;
         }
-      } else {
-        setIsTooFarOut(true);
+      }
+
+      setIsTooFarOut(!foundWithinFiveDays);
+
+      try {
+        const coords = await getLatLon(destination);
+
+        // Fetch both in parallel
+        const [forecastRes, climateRes] = await Promise.all([
+          fetch(
+            `https://api.tomorrow.io/v4/weather/forecast?location=${encodeURIComponent(
+              destination
+            )}&apikey=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}`
+          ),
+          fetch(
+            `/api/climate-averages?lat=${coords.lat}&lon=${coords.lon}&start=${
+              new Date(start).toISOString().split("T")[0]
+            }&end=${new Date(end).toISOString().split("T")[0]}`
+          ),
+        ]);
+
+        const forecastData = await forecastRes.json();
+        const climateData = await climateRes.json();
+
+        setTimezone(forecastData.location?.tz || timezone);
+
+        const forecastMap = {};
+        for (const d of forecastData.timelines.daily) {
+          forecastMap[new Date(d.time).toISOString().split("T")[0]] = d;
+        }
+
+        const climateMap = {};
+        for (const d of climateData) {
+          const date = new Date(d.date);
+          date.setFullYear(new Date().getFullYear());
+          climateMap[date.toISOString().split("T")[0]] = d;
+        }
+
+        const combined = [];
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const isoDate = d.toISOString().split("T")[0];
+          if (d >= now && d <= fiveDaysFromNow && forecastMap[isoDate]) {
+            combined.push({
+              type: "forecast",
+              data: forecastMap[isoDate],
+              date: isoDate,
+            });
+          } else if (climateMap[isoDate]) {
+            combined.push({
+              type: "historical",
+              data: climateMap[isoDate],
+              date: isoDate,
+            });
+          }
+        }
+
+        setForecast(combined);
+      } catch (err) {
+        console.error("Failed to fetch weather data:", err);
       }
     };
 
     fetchWeatherOrClimate();
   }, [trip]);
 
-  const convertTemp = (tempC) =>
-    unit === "C" ? `${tempC}°C` : `${((tempC * 9) / 5 + 32).toFixed(1)}°F`;
+  const convertTemp = (tempF) =>
+    unit === "F" ? `${tempF.toFixed(1)}°F` : `${(((tempF - 32) * 5) / 9).toFixed(1)}°C`;
 
   if (loading) {
     return (
@@ -297,70 +368,98 @@ export default function TripDetailsPage() {
 
         <Divider sx={{ my: 3 }} />
 
-        {forecast.length > 0 ? (
+        {forecast.length > 0 && (
           <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
+            <Typography variant="h6" fontWeight="bold">
               Weather Forecast ({unit})
             </Typography>
-
-            <Box sx={{ overflowX: "auto", whiteSpace: "nowrap", mt: 2 }}>
-              <Box sx={{ display: "flex", gap: 2 }}>
-                {forecast.map((day, idx) => (
-                  <Paper
-                    key={idx}
-                    sx={{
-                      minWidth: 180,
-                      maxWidth: 180,
-                      flexShrink: 0,
-                      p: 2,
-                      borderRadius: 3,
-                      textAlign: "center",
-                    }}
-                  >
-                    <Typography fontWeight="bold" sx={{ mb: 1 }}>
-                      {new Date(day.time).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        timeZone: timezone,
-                      })}
-                    </Typography>
-                    <Box
-                      sx={{ display: "flex", justifyContent: "center", mb: 1 }}
-                    >
-                      <img
-                        src={getWeatherIconUrl(day.values.weatherCodeMax)}
-                        alt="icon"
-                        crossOrigin="anonymous"
-                        style={{ width: 60, height: 60, objectFit: "contain" }}
-                      />
-                    </Box>
-                    <Typography fontWeight="bold">
-                      H: {convertTemp(day.values.temperatureMax)} / L:{" "}
-                      {convertTemp(day.values.temperatureMin)}
-                    </Typography>
-                    <Typography variant="body2">
-                      💧 {day.values.precipitationProbabilityAvg ?? 0}%
-                    </Typography>
-                    <Typography variant="body2">
-                      🌬 {day.values.windSpeedAvg} m/s
-                    </Typography>
-                  </Paper>
-                ))}
+            {isTooFarOut && (
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  sx={{
+                    backgroundColor: "#fff3cd",
+                    color: "#856404",
+                    px: 2,
+                    py: 1,
+                    borderRadius: 1,
+                  }}
+                >
+                  ⚠️ Weather Prediction Based on Historical Data
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Based on archived data from the same dates in 2024.
+                </Typography>
               </Box>
+            )}
+            <Box sx={{ display: "flex", gap: 2, overflowX: "auto", mt: 2 }}>
+              {forecast.map((entry, idx) => (
+                <Paper
+                  key={idx}
+                  sx={{
+                    minWidth: 180,
+                    p: 2,
+                    borderRadius: 3,
+                    textAlign: "center",
+                  }}
+                >
+                  <Typography fontWeight="bold" sx={{ mb: 1 }}>
+                    {new Date(entry.date).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      timeZone: timezone,
+                    })}
+                  </Typography>
+                  <Box
+                    sx={{ display: "flex", justifyContent: "center", mb: 1 }}
+                  >
+                    <img
+                      src={
+                        entry.type === "forecast"
+                          ? getWeatherIconUrl(entry.data.values.weatherCodeMax)
+                          : getIconForHistoricalDay(
+                              Number(entry.data.Precipitation),
+                              (Number(entry.data.High) * 9) / 5 + 32
+                            )
+                      }
+                      alt="icon"
+                      style={{ width: 60, height: 60 }}
+                    />
+                  </Box>
+                  {entry.type === "forecast" ? (
+                    <>
+                      <Typography fontWeight="bold">
+                        H: {convertTemp(entry.data.values.temperatureMax)} / L:{" "}
+                        {convertTemp(entry.data.values.temperatureMin)}
+                      </Typography>
+                      <Typography variant="body2">
+                        💧 {entry.data.values.precipitationProbabilityAvg ?? 0}%
+                      </Typography>
+                      <Typography variant="body2">
+                        🌬 {entry.data.values.windSpeedAvg} m/s
+                      </Typography>
+                    </>
+                  ) : (
+                    <>
+                      <Typography fontWeight="bold">
+                        H: {convertTemp((entry.data.High * 9) / 5 + 32)} / L:{" "}
+                        {convertTemp((entry.data.Low * 9) / 5 + 32)}
+                      </Typography>
+                      <Typography variant="body2">
+                        💧 {entry.data.Precipitation}
+                      </Typography>
+                      <Typography variant="body2">
+                        🌬 {entry.data.Wind} m/s
+                      </Typography>
+                    </>
+                  )}
+                </Paper>
+              ))}
             </Box>
           </Box>
-        ) : isTooFarOut ? (
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Weather Forecast Unavailable
-            </Typography>
-            <Typography variant="body2">
-              The trip dates are too far in the future or already passed to show
-              an accurate weather forecast.
-            </Typography>
-          </Box>
-        ) : null}
+        )}
 
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
