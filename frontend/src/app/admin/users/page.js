@@ -45,6 +45,12 @@ export default function Users() {
 
   // Create user
   const handleCreate = async () => {
+    if (!isPasswordValid(password)) {
+      alert(
+        "Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, a special character, and must not contain repeated characters."
+      );
+      return;
+    }
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
@@ -102,6 +108,13 @@ export default function Users() {
 
   // actually edit the firebase user
   const handleSaveEdit = async (updateData) => {
+    if (updateData.password && !isPasswordValid(updateData.password)) {
+      alert(
+        "Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, a special character, and must not contain repeated characters."
+      );
+      return;
+    }
+
     try {
       const res = await fetch("/api/admin/users", {
         method: "PATCH",
@@ -121,6 +134,18 @@ export default function Users() {
       console.error("Edit failed:", err.message);
       alert(`Error: ${err.message}`);
     }
+  };
+
+  const isPasswordValid = (password) => {
+    return (
+      typeof password === "string" &&
+      password.length >= 8 &&
+      /[a-z]/.test(password) &&
+      /[A-Z]/.test(password) &&
+      /\d/.test(password) &&
+      /[!@#$%^&*(),.?":{}|<>]/.test(password) &&
+      !/(.)\1\1/.test(password) // no 3 repeated characters
+    );
   };
 
   // filter admins/regular users

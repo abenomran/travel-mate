@@ -1,8 +1,20 @@
 "use client";
 import { useAdminCheck } from "@/app/hooks/CheckAdmin";
-import { Button, Container, Typography, Stack, Box, CircularProgress } from "@mui/material";
+import {
+  Button,
+  Container,
+  Typography,
+  Stack,
+  Box,
+  CircularProgress,
+} from "@mui/material";
 import { useEffect, useState } from "react";
-import { getFirestore, collection, collectionGroup, getCountFromServer } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  collectionGroup,
+  getCountFromServer,
+} from "firebase/firestore";
 
 export default function AdminPanel() {
   const { loading, isAdmin } = useAdminCheck(false);
@@ -23,7 +35,7 @@ export default function AdminPanel() {
 
         setStats({
           users: usersSnapshot.data().count,
-          trips: tripsSnapshot.data().count
+          trips: tripsSnapshot.data().count,
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -69,7 +81,7 @@ export default function AdminPanel() {
         )}
       </Box>
 
-      <Stack spacing={2} direction="row" flexWrap="wrap">
+      {/* <Stack spacing={2} direction="row" flexWrap="wrap">
         <Button variant="contained" href="/admin/users">
           Manage Users
         </Button>
@@ -82,7 +94,7 @@ export default function AdminPanel() {
         <Button variant="contained" href="/admin/reminder">
           Edit Reminder Template
         </Button>
-      </Stack>
+      </Stack> */}
     </Container>
   );
 }

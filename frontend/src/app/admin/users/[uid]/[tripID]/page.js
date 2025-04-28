@@ -1,14 +1,43 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, getDoc, collection, updateDoc, deleteDoc } from "firebase/firestore";
-import { db } from "@/app/firebase";
 import {
-  Container, Typography, CircularProgress, Paper,
-  TextField, Button, Stack, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+  doc,
+  getDoc,
+  collection,
+  updateDoc,
+  deleteDoc,
+  getFirestore,
+  getDocs,
+} from "firebase/firestore";
+import { db, default as app } from "@/app/firebase";
+import {
+  Container,
+  Typography,
+  CircularProgress,
+  Paper,
+  TextField,
+  Button,
+  Stack,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Autocomplete,
+  Box,
 } from "@mui/material";
 import ReactMarkdown from "react-markdown";
 import { useAdminCheck } from "@/app/hooks/CheckAdmin";
+import Select from "react-select";
+function useDebounce(value, delay) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debounced;
+}
 
 export default function TripDetailsPage() {
   const { uid, tripID } = useParams();
@@ -19,6 +48,12 @@ export default function TripDetailsPage() {
   const [editMode, setEditMode] = useState(false);
   const [editTrip, setEditTrip] = useState({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [cityOptions, setCityOptions] = useState([]);
+  const debouncedValue = useDebounce(editTrip.destination || "", 300);
+  const [activitiesOptions, setActivitiesOptions] = useState([]);
+  const [loadingActivities, setLoadingActivities] = useState(true);
+  const [generationError, setGenerationError] = useState("");
+  const [generating, setGenerating] = useState(false);
 
   const { isAdmin } = useAdminCheck();
 
@@ -51,6 +86,44 @@ export default function TripDetailsPage() {
     fetchTrip();
   }, [tripID, isAdmin]);
 
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const activitiesRef = collection(db, "activities");
+        const snapshot = await getDocs(activitiesRef);
+        const options = snapshot.docs.map((doc) => ({
+          value: doc.data().name,
+          label: doc.data().name,
+        }));
+        setActivitiesOptions(options);
+      } catch (err) {
+        console.error("Error fetching activities:", err);
+        setGenerationError("Failed to load activities. Please try again.");
+      } finally {
+        setLoadingActivities(false);
+      }
+    };
+
+    fetchActivities();
+  }, []);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (debouncedValue.length < 2) return;
+      try {
+        const response = await fetch(`/api/cities?q=${debouncedValue}`);
+        const data = await response.json();
+        const options = data.data.map(
+          (city) => `${city.city}, ${city.regionCode}, ${city.countryCode}`
+        );
+        setCityOptions(options.sort());
+      } catch (err) {
+        console.error("City autocomplete failed:", err);
+      }
+    };
+    fetchSuggestions();
+  }, [debouncedValue]);
+
   if (loading) {
     return (
       <Container sx={{ mt: 6 }}>
@@ -69,12 +142,17 @@ export default function TripDetailsPage() {
 
   if (!isAdmin) return null;
 
-  const handleEditChange = (field) => (e) => {
-    setEditTrip({ ...editTrip, [field]: e.target.value });
+  const handleEditChange = (field) => (e, value) => {
+    const inputValue =
+      typeof e === "object" && e?.target ? e.target.value : value;
+    setEditTrip({ ...editTrip, [field]: inputValue });
   };
 
   const handleActivitiesChange = (e) => {
-    setEditTrip({ ...editTrip, activities: e.target.value.split(",").map(s => s.trim()) });
+    setEditTrip({
+      ...editTrip,
+      activities: e.target.value.split(",").map((s) => s.trim()),
+    });
   };
 
   const handleSave = async () => {
@@ -99,26 +177,94 @@ export default function TripDetailsPage() {
     }
   };
 
+  const handleGenerateContent = async () => {
+    if (
+      !editTrip.destination ||
+      !editTrip.startDate ||
+      !editTrip.endDate ||
+      !editTrip.activities?.length
+    ) {
+      setGenerationError(
+        "Please fill in destination, dates, and at least one activity."
+      );
+      return;
+    }
+
+    setGenerating(true);
+    setGenerationError("");
+
+    try {
+      const response = await fetch("/api/packing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          destination: editTrip.destination,
+          startDate: editTrip.startDate,
+          endDate: editTrip.endDate,
+          activities: editTrip.activities,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Generation failed");
+
+      const generated = await response.json();
+
+      setEditTrip((prev) => ({
+        ...prev,
+        packingList: generated.packingList,
+        localEssentials: generated.localEssentials,
+        travelTips: generated.travelTips,
+        clothingSuggestions: generated.clothingSuggestions,
+        localEtiquette: generated.localEtiquette,
+      }));
+    } catch (err) {
+      setGenerationError("Failed to generate content. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <Container sx={{ mt: 6 }}>
       <Stack direction="row" spacing={2} alignItems="center" mb={2}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
+        <Box sx={{ flexGrow: 1 }}>
           {editMode ? (
-            <TextField
-              label="Destination"
-              value={editTrip.destination}
-              onChange={handleEditChange("destination")}
-              variant="outlined"
-              size="small"
+            <Autocomplete
+              freeSolo
+              options={cityOptions}
+              inputValue={editTrip.destination || ""}
+              onInputChange={handleEditChange("destination")}
+              onChange={(e, value) =>
+                value &&
+                setEditTrip((prev) => ({ ...prev, destination: value }))
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Destination"
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                />
+              )}
+              sx={{ minWidth: 250, maxWidth: 300 }}
             />
           ) : (
-            trip.destination
+            <Typography variant="h4" fontWeight="bold" gutterBottom>
+              {trip.destination}
+            </Typography>
           )}
-        </Typography>
-        <Button variant={editMode ? "contained" : "outlined"} onClick={() => setEditMode(!editMode)}>
+        </Box>
+        <Button
+          variant={editMode ? "contained" : "outlined"}
+          onClick={() => setEditMode(!editMode)}
+        >
           {editMode ? "Cancel" : "Edit"}
         </Button>
-        <Button color="error" variant="outlined" onClick={() => setDeleteDialogOpen(true)}>
+        <Button
+          color="error"
+          variant="outlined"
+          onClick={() => setDeleteDialogOpen(true)}
+        >
           Delete Trip
         </Button>
       </Stack>
@@ -152,117 +298,113 @@ export default function TripDetailsPage() {
       </Typography>
 
       <Typography variant="subtitle2" gutterBottom>
-        Activities:{" "}
-        {editMode ? (
-          <TextField
-            value={Array.isArray(editTrip.activities) ? editTrip.activities.join(", ") : ""}
-            onChange={handleActivitiesChange}
-            variant="outlined"
-            size="small"
-            sx={{ minWidth: 300 }}
-          />
-        ) : (
-          Array.isArray(trip.activities) ? trip.activities.join(", ") : "None"
-        )}
+        Activities:
       </Typography>
-
-      <Paper sx={{ p: 3, mb: 3, mt: 4 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Packing List
-        </Typography>
-        {editMode ? (
-          <TextField
-            value={editTrip.packingList}
-            onChange={handleEditChange("packingList")}
-            multiline
-            minRows={4}
-            fullWidth
+      {editMode ? (
+        <Box sx={{ mb: 2 }}>
+          <Select
+            isMulti
+            options={activitiesOptions}
+            isLoading={loadingActivities}
+            value={activitiesOptions.filter((option) =>
+              (editTrip.activities || []).includes(option.value)
+            )}
+            onChange={(selected) => {
+              setEditTrip({
+                ...editTrip,
+                activities: selected.map((option) => option.value),
+              });
+            }}
+            placeholder="Select activities..."
+            classNamePrefix="react-select"
           />
-        ) : (
-          <Typography>
-            <ReactMarkdown>{trip.packingList}</ReactMarkdown>
-          </Typography>
-        )}
-      </Paper>
-
-      <Paper sx={{ p: 3, mb: 3, mt: 4 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Clothing Suggestions
+        </Box>
+      ) : (
+        <Typography>
+          {Array.isArray(trip.activities) ? trip.activities.join(", ") : "None"}
         </Typography>
-        {editMode ? (
-          <TextField
-            value={editTrip.clothingSuggestions}
-            onChange={handleEditChange("clothingSuggestions")}
-            multiline
-            minRows={4}
-            fullWidth
-          />
-        ) : (
-          <Typography>
-            <ReactMarkdown>{trip.clothingSuggestions}</ReactMarkdown>
-          </Typography>
-        )}
-      </Paper>
+      )}
 
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Local Essentials
-        </Typography>
-        {editMode ? (
-          <TextField
-            value={editTrip.localEssentials}
-            onChange={handleEditChange("localEssentials")}
-            multiline
-            minRows={4}
-            fullWidth
-          />
-        ) : (
-          <Typography>
-            <ReactMarkdown>{trip.localEssentials}</ReactMarkdown>
-          </Typography>
-        )}
-      </Paper>
+      {editMode && (
+        <>
+          {generationError && (
+            <Typography color="error" sx={{ mt: 1 }}>
+              {generationError}
+            </Typography>
+          )}
+          <Button
+            variant="contained"
+            onClick={handleGenerateContent}
+            disabled={generating}
+            sx={{ my: 2 }}
+          >
+            {generating ? "Generating..." : "Generate AI Content"}
+          </Button>
+        </>
+      )}
 
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          Travel Tips
-        </Typography>
-        {editMode ? (
-          <TextField
-            value={editTrip.travelTips}
-            onChange={handleEditChange("travelTips")}
-            multiline
-            minRows={4}
-            fullWidth
-          />
-        ) : (
-          <Typography>
-            <ReactMarkdown>{trip.travelTips}</ReactMarkdown>
+      {[
+        "packingList",
+        "clothingSuggestions",
+        "localEtiquette",
+        "localEssentials",
+        "travelTips",
+      ].map((sectionKey, index) => (
+        <Paper sx={{ p: 3, mb: 3, mt: index === 0 ? 4 : 0 }} key={sectionKey}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            {sectionKey
+              .replace(/([A-Z])/g, " $1")
+              .replace(/^./, (str) => str.toUpperCase())}
           </Typography>
-        )}
-      </Paper>
+          {editMode ? (
+            <TextField
+              value={editTrip[sectionKey] || ""}
+              onChange={handleEditChange(sectionKey)}
+              multiline
+              minRows={4}
+              fullWidth
+            />
+          ) : (
+            <Typography>
+              <ReactMarkdown>{trip[sectionKey]}</ReactMarkdown>
+            </Typography>
+          )}
+        </Paper>
+      ))}
 
       {editMode && (
         <Stack direction="row" spacing={2} mb={4}>
           <Button variant="contained" color="primary" onClick={handleSave}>
             Save Changes
           </Button>
-          <Button variant="outlined" onClick={() => { setEditTrip(trip); setEditMode(false); }}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setEditTrip(trip);
+              setEditMode(false);
+            }}
+          >
             Cancel
           </Button>
         </Stack>
       )}
 
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
         <DialogTitle>Delete Trip</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this trip? This action cannot be undone.
+            Are you sure you want to delete this trip? This action cannot be
+            undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error">Delete</Button>
+          <Button onClick={handleDelete} color="error">
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

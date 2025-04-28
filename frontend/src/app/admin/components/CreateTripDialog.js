@@ -13,8 +13,19 @@ import {
   Stack,
   Alert,
   Typography,
+  Autocomplete,
 } from "@mui/material";
-import Select from 'react-select';
+import Select from "react-select";
+
+// Debounce hook
+function useDebounce(value, delay) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debounced;
+}
 
 export default function CreateTripDialog({ open, onClose, onCreate }) {
   const [newTrip, setNewTrip] = useState({
@@ -26,12 +37,15 @@ export default function CreateTripDialog({ open, onClose, onCreate }) {
     localEssentials: "",
     travelTips: "",
     clothingSuggestions: "",
+    localEtiquette: "",
   });
   const [formErrors, setFormErrors] = useState({});
   const [generating, setGenerating] = useState(false);
   const [generationError, setGenerationError] = useState("");
   const [activitiesOptions, setActivitiesOptions] = useState([]);
   const [loadingActivities, setLoadingActivities] = useState(true);
+  const [cityOptions, setCityOptions] = useState([]);
+  const debouncedDestination = useDebounce(newTrip.destination, 300);
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -53,6 +67,23 @@ export default function CreateTripDialog({ open, onClose, onCreate }) {
 
     fetchActivities();
   }, []);
+
+  useEffect(() => {
+    const fetchCitySuggestions = async () => {
+      if (debouncedDestination.length < 2) return;
+      try {
+        const response = await fetch(`/api/cities?q=${debouncedDestination}`);
+        const data = await response.json();
+        const options = data.data.map(
+          (city) => `${city.city}, ${city.regionCode}, ${city.countryCode}`
+        );
+        setCityOptions(options.sort());
+      } catch (err) {
+        console.error("City autocomplete failed:", err);
+      }
+    };
+    fetchCitySuggestions();
+  }, [debouncedDestination]);
 
   const validateBasicFields = () => {
     const errors = {};
@@ -87,10 +118,12 @@ export default function CreateTripDialog({ open, onClose, onCreate }) {
       setNewTrip((prev) => ({
         ...prev,
         packingList: generated.packingList,
+        localEtiquette: generated.localEtiquette,
         localEssentials: generated.localEssentials,
         travelTips: generated.travelTips,
         clothingSuggestions: generated.clothingSuggestions,
       }));
+      console.log("Generated content:", generated);
     } catch (err) {
       setGenerationError("Failed to generate content. Please try again.");
     } finally {
@@ -114,6 +147,7 @@ export default function CreateTripDialog({ open, onClose, onCreate }) {
       localEssentials: "",
       travelTips: "",
       clothingSuggestions: "",
+      localEtiquette: "",
     });
     onClose();
   };
@@ -126,15 +160,24 @@ export default function CreateTripDialog({ open, onClose, onCreate }) {
           {generationError && <Alert severity="error">{generationError}</Alert>}
 
           <Stack direction="row" spacing={2}>
-            <TextField
-              label="Destination"
-              value={newTrip.destination}
-              onChange={(e) =>
-                setNewTrip({ ...newTrip, destination: e.target.value })
+            <Autocomplete
+              freeSolo
+              options={cityOptions}
+              inputValue={newTrip.destination}
+              onInputChange={(e, value) =>
+                setNewTrip((prev) => ({ ...prev, destination: value }))
               }
-              error={formErrors.destination}
-              helperText={formErrors.destination && "Required"}
-              fullWidth
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Destination"
+                  error={formErrors.destination}
+                  helperText={formErrors.destination && "Required"}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                />
+              )}
+              sx={{ minWidth: 250, maxWidth: 300 }}
             />
             <TextField
               label="Start Date"
@@ -205,54 +248,41 @@ export default function CreateTripDialog({ open, onClose, onCreate }) {
               "Generate AI Content"
             )}
           </Button>
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Packing List
-          </Typography>
-          <TextField
-            value={newTrip.packingList}
-            onChange={(e) =>
-              setNewTrip({ ...newTrip, packingList: e.target.value })
-            }
-            multiline
-            minRows={4}
-            fullWidth
-          />
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Clothing Suggestions
-          </Typography>
-          <TextField
-            value={newTrip.clothingSuggestions}
-            onChange={(e) =>
-              setNewTrip({ ...newTrip, clothingSuggestions: e.target.value })
-            }
-            multiline
-            minRows={4}
-            fullWidth
-          />
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Local Essentials
-          </Typography>
-          <TextField
-            value={newTrip.localEssentials}
-            onChange={(e) =>
-              setNewTrip({ ...newTrip, localEssentials: e.target.value })
-            }
-            multiline
-            minRows={4}
-            fullWidth
-          />
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Travel Tips
-          </Typography>
-          <TextField
-            value={newTrip.travelTips}
-            onChange={(e) =>
-              setNewTrip({ ...newTrip, travelTips: e.target.value })
-            }
-            multiline
-            minRows={4}
-            fullWidth
-          />
+
+          {[
+            "Packing List",
+            "Clothing Suggestions",
+            "Local Etiquette",
+            "Local Essentials",
+            "Travel Tips",
+          ].map((label) => {
+            const toCamelCase = (str) =>
+              str
+                .toLowerCase()
+                .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
+                  index === 0 ? word.toLowerCase() : word.toUpperCase()
+                )
+                .replace(/\s+/g, "");
+
+            const fieldKey = toCamelCase(label);
+
+            return (
+              <div key={fieldKey}>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  {label}
+                </Typography>
+                <TextField
+                  value={newTrip[fieldKey]}
+                  onChange={(e) =>
+                    setNewTrip({ ...newTrip, [fieldKey]: e.target.value })
+                  }
+                  multiline
+                  minRows={4}
+                  fullWidth
+                />
+              </div>
+            );
+          })}
         </Stack>
       </DialogContent>
       <DialogActions>

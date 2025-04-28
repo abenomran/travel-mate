@@ -55,10 +55,12 @@ export default function AdminActivitiesPage() {
   const fetchActivities = async () => {
     try {
       const querySnapshot = await getDocs(activitiesCollection);
-      const fetchedActivities = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const fetchedActivities = querySnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)); // alphabetical sort
       setActivities(fetchedActivities);
     } catch (err) {
       console.error("Error fetching activities:", err);

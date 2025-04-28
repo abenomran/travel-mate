@@ -10,6 +10,8 @@ import {
   ButtonBase,
   Box,
   Button,
+  Chip,
+  Stack
 } from "@mui/material";
 import Link from "next/link";
 import dayjs from "dayjs";
@@ -47,7 +49,9 @@ export default function Trips() {
 
     const fetchReminderTemplate = async () => {
       try {
-        const reminderDoc = await getDoc(doc(db, "templates", "reminderTemplate"));
+        const reminderDoc = await getDoc(
+          doc(db, "templates", "reminderTemplate")
+        );
         if (reminderDoc.exists()) {
           setReminderMessage(reminderDoc.data().text || "");
         }
@@ -62,28 +66,36 @@ export default function Trips() {
 
   const today = dayjs();
 
+  // upcoming/current
   const upcomingTrips = trips.filter((trip) => {
-    if (!trip.startDate) return false;
+    if (!trip.startDate || !trip.endDate) return false;
     const start = dayjs(trip.startDate);
-    return start.diff(today, "day") >= 0 && start.diff(today, "day") < 3;
+    const end = dayjs(trip.endDate);
+    return (
+      (start.diff(today, "day") >= 0 && start.diff(today, "day") < 3) || // starts soon
+      (start.isBefore(today, "day") && end.isAfter(today, "day")) // currently ongoing
+    );
   });
-  
-  const otherTrips = trips.filter((trip) => {
-    if (!trip.startDate) return false;
+
+  // Future trips — not upcoming/current
+  const futureTrips = trips.filter((trip) => {
+    if (!trip.startDate || !trip.endDate) return false;
     const start = dayjs(trip.startDate);
-    return !(start.diff(today, "day") >= 0 && start.diff(today, "day") < 3);
+    return start.diff(today, "day") >= 3;
+  });
+
+  // Past trips - fully ended
+  const pastTrips = trips.filter((trip) => {
+    if (!trip.endDate) return false;
+    const end = dayjs(trip.endDate);
+    return end.isBefore(today, "day");
   });
 
   const renderTrips = (tripList) => (
     <Grid container spacing={3}>
       <Box sx={{ width: "100%" }}>
         {tripList.map((trip) => (
-          <Link
-            key={trip.id}
-            href={`/trip/${trip.id}`}
-            passHref
-            legacyBehavior
-          >
+          <Link key={trip.id} href={`/trip/${trip.id}`} passHref legacyBehavior>
             <Box
               component="a"
               sx={{
@@ -115,11 +127,28 @@ export default function Trips() {
                   {trip.destination}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {trip.startDate} → {trip.endDate}
+                  {dayjs(trip.startDate).format("MMM D, YYYY")}{" "}
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    color="primary"
+                    sx={{ mx: 0.5 }}
+                  >
+                    →
+                  </Typography>
+                  {dayjs(trip.endDate).format("MMM D, YYYY")}
                 </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  Activities: {trip.activities?.join(", ") || "None"}
-                </Typography>
+                {trip.activities?.length > 0 ? (
+                  <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ mt: 1 }}>
+                    {trip.activities.map((act) => (
+                      <Chip key={act} label={act} size="small" />
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: "italic" }}>
+                    No activities planned
+                  </Typography>
+                )}
               </ButtonBase>
             </Box>
           </Link>
@@ -129,7 +158,14 @@ export default function Trips() {
   );
 
   return (
-    <Container sx={{ mt: 6 }}>
+    <Box
+    sx={{
+      background: 'linear-gradient(135deg,rgb(216, 243, 250) 0%,rgb(178, 227, 255) 100%)',
+      minHeight: '100vh',
+      py: 8,
+    }}
+  >
+    <Container maxWidth="md">
       <Typography variant="h4" gutterBottom fontWeight="bold">
         Your Trips
       </Typography>
@@ -142,7 +178,8 @@ export default function Trips() {
             Looks like you haven't created any trips yet.
           </Typography>
           <Typography variant="body1" gutterBottom>
-            Ready to start planning? Let us help you pack smart and travel better.
+            Ready to start planning? Let us help you pack smart and travel
+            better.
           </Typography>
           <Button variant="contained" color="primary" href="/get-started">
             Plan Your First Trip
@@ -154,21 +191,22 @@ export default function Trips() {
             Upcoming Trips
           </Typography>
           {reminderMessage && upcomingTrips.length > 0 && (
-            <Typography 
-              variant="body1" 
-              sx={{ 
-                mb: 2,
-                color: 'orange',
-                fontWeight: 500,
-                backgroundColor: '#fff7eb',
-                p: 1.5,
-                borderRadius: 1,
-                borderLeft: '4px solid orange'
-              }}
-            >
-              {reminderMessage}
-            </Typography>
-          )}
+          <Typography
+            variant="body1"
+            sx={{
+              mb: 2,
+              color: "#b34104",
+              fontWeight: 500,
+              backgroundColor: "#fff7eb",
+              p: 1.5,
+              borderRadius: 1,
+              borderLeft: "4px solid orange",
+              whiteSpace: "pre-line"   // ← preserves \n as line breaks
+            }}
+          >
+            {reminderMessage}
+          </Typography>
+        )}
           {upcomingTrips.length > 0 ? (
             renderTrips(upcomingTrips)
           ) : (
@@ -178,17 +216,25 @@ export default function Trips() {
           )}
 
           <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
-            All other Trips
+            Future Trips
           </Typography>
-          {otherTrips.length > 0 ? (
-            renderTrips(otherTrips)
+          {futureTrips.length > 0 ? (
+            renderTrips(futureTrips)
           ) : (
-            <Typography variant="body2">
-              No other trips yet.
-            </Typography>
+            <Typography variant="body2">No future trips yet.</Typography>
+          )}
+
+          <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
+            Past Trips
+          </Typography>
+          {pastTrips.length > 0 ? (
+            renderTrips(pastTrips)
+          ) : (
+            <Typography variant="body2">No past trips yet.</Typography>
           )}
         </>
       )}
     </Container>
+  </Box>
   );
 }
