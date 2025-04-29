@@ -46,11 +46,11 @@ export default function PackingListPage() {
         });
         const data = await res.json();
 
-        setPackingList(data.packingList || "—");
-        setClothingSuggestions(data.clothingSuggestions || "—");
-        setLocalEtiquette(data.localEtiquette || "—");
-        setLocalEssentials(data.localEssentials || "—");
-        setTravelTips(data.travelTips || "—");
+        setPackingList(data.packingList || "Sorry, no packing list available due to high traffic.");
+        setClothingSuggestions(data.clothingSuggestions || "Sorry, no clothing suggestions available due to high traffic.");
+        setLocalEtiquette(data.localEtiquette || "Sorry, no local etiquette available due to high traffic.");
+        setLocalEssentials(data.localEssentials || "Sorry, no local essentials available due to high traffic.");
+        setTravelTips(data.travelTips || "Sorry, no travel tips available due to high traffic.");
         setError("");
       } catch (err) {
         console.error(err);

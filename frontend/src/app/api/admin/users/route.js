@@ -34,6 +34,15 @@ export async function POST(req) {
 
   try {
     const userRecord = await getAuth().createUser({ email, password });
+    const db = getFirestore()
+    await db
+      .collection('users')
+      .doc(userRecord.uid)
+      .set({
+        email:     userRecord.email,
+        createdAt: new Date(),    // server timestamp
+        role:      'user',
+      })
     return NextResponse.json({ uid: userRecord.uid });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

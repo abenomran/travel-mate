@@ -90,6 +90,14 @@ export default function CreateTripDialog({ open, onClose, onCreate }) {
     if (!newTrip.destination) errors.destination = true;
     if (!newTrip.startDate) errors.startDate = true;
     if (!newTrip.endDate) errors.endDate = true;
+    if (newTrip.startDate && newTrip.endDate) {
+      const start = new Date(newTrip.startDate);
+      const end   = new Date(newTrip.endDate);
+      if (start > end) {
+        errors.startDate = true;
+        errors.endDate = true;
+      }
+    }
     if (newTrip.activities.length === 0) errors.activities = true;
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -188,7 +196,7 @@ export default function CreateTripDialog({ open, onClose, onCreate }) {
               }
               InputLabelProps={{ shrink: true }}
               error={formErrors.startDate}
-              helperText={formErrors.startDate && "Required"}
+              helperText={formErrors.startDate && "Invalid or missing"}
               fullWidth
             />
             <TextField
@@ -200,7 +208,7 @@ export default function CreateTripDialog({ open, onClose, onCreate }) {
               }
               InputLabelProps={{ shrink: true }}
               error={formErrors.endDate}
-              helperText={formErrors.endDate && "Required"}
+              helperText={formErrors.endDate && "Invalid or missing"}
               fullWidth
             />
           </Stack>

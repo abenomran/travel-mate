@@ -156,6 +156,24 @@ export default function TripDetailsPage() {
   };
 
   const handleSave = async () => {
+    const errors = {};
+
+    if (!editTrip.destination?.trim())    errors.destination = true;
+    if (!editTrip.startDate)              errors.startDate   = true;
+    if (!editTrip.endDate)                errors.endDate     = true;
+
+    if (editTrip.startDate && editTrip.endDate) {
+      const start = new Date(editTrip.startDate);
+      const end   = new Date(editTrip.endDate);
+      if (start > end)                     errors.dateOrder   = true;
+    }
+
+    if ((editTrip.activities || []).length === 0) errors.activities = true;
+
+    if (Object.keys(errors).length > 0) alert("Enter information or fix invalid dates(start before end).");
+    if (Object.keys(errors).length > 0) return;
+
+
     const tripRef = doc(db, "users", uid, "trips", tripID);
     try {
       await updateDoc(tripRef, editTrip);
