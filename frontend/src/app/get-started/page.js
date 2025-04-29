@@ -69,17 +69,46 @@ export default function GetStarted() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!destination || !startDate || selectedActivities.length === 0) {
-      setError("Please complete all fields.");
+  
+    if (!destination) {
+      setError("Please enter a destination.");
       return;
     }
+  
+    if (!startDate) {
+      setError("Please enter a valid start date.");
+      return;
+    }
+  
+    if (!endDate) {
+      setError("Please enter a valid end date.");
+      return;
+    }
+  
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+  
+    if (start > end) {
+      setError("Start date cannot be after end date.");
+      return;
+    }
+  
+    if (selectedActivities.length === 0) {
+      setError("Please select at least one activity.");
+      return;
+    }
+  
+    setError("");
+  
     setLoading(true);
+  
     const params = new URLSearchParams({
       destination,
       start: startDate,
       end: endDate,
       activities: selectedActivities.join(","),
     });
+  
     router.push(`/packing-list?${params}`);
   };
 
