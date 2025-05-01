@@ -10,6 +10,8 @@ import {
   Autocomplete,
   ToggleButton,
   ToggleButtonGroup,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
@@ -34,12 +36,11 @@ export default function GetStarted() {
   const [selectedActivities, setSelectedActivities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showSnackbar, setShowSnackbar] = useState(false);
 
   const isValidDestination = destination.split(",").length >= 3;
-  const debouncedDestination = useDebounce(destination, 300); // 300ms delay
+  const debouncedDestination = useDebounce(destination, 300);
 
-
-  // Fetch city autocomplete options
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (debouncedDestination.length < 2) return;
@@ -57,7 +58,6 @@ export default function GetStarted() {
     fetchSuggestions();
   }, [debouncedDestination]);
 
-  // Fetch activities from Firebase
   useEffect(() => {
     const fetchActivities = async () => {
       try {
@@ -74,11 +74,29 @@ export default function GetStarted() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const todayStr = new Date().toISOString().split("T")[0];
+
     if (!destination || !startDate || selectedActivities.length === 0) {
       setError("Please complete all fields.");
+      setShowSnackbar(true);
       return;
     }
 
+    if (startDate < todayStr) {
+      setError("Start date cannot be in the past.");
+      setShowSnackbar(true);
+      return;
+    }
+
+    if (endDate && endDate < startDate) {
+      setError("End date cannot be before start date.");
+      setShowSnackbar(true);
+      return;
+    }
+
+    setError("");
+    setShowSnackbar(false);
     const query = new URLSearchParams({
       destination,
       start: startDate,
@@ -88,6 +106,8 @@ export default function GetStarted() {
 
     router.push(`/packing-list?${query}`);
   };
+
+  const todayStr = new Date().toISOString().split("T")[0];
 
   return (
     <Box sx={{ backgroundColor: "#F9FAFB", minHeight: "100vh", py: 6 }}>
@@ -116,6 +136,7 @@ export default function GetStarted() {
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             InputLabelProps={{ shrink: true }}
+            inputProps={{ min: todayStr }}
             sx={{ mb: 2 }}
           />
 
@@ -126,6 +147,7 @@ export default function GetStarted() {
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             InputLabelProps={{ shrink: true }}
+            inputProps={{ min: startDate || todayStr }}
             sx={{ mb: 3 }}
           />
 
@@ -146,12 +168,6 @@ export default function GetStarted() {
             ))}
           </ToggleButtonGroup>
 
-          {error && (
-            <Typography color="error" sx={{ mb: 2 }}>
-              {error}
-            </Typography>
-          )}
-
           <Button
             type="submit"
             variant="contained"
@@ -161,6 +177,17 @@ export default function GetStarted() {
             {loading ? <CircularProgress size={24} /> : "Next: Get Packing List"}
           </Button>
         </form>
+
+        <Snackbar
+          open={showSnackbar}
+          autoHideDuration={5000}
+          onClose={() => setShowSnackbar(false)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert severity="error" onClose={() => setShowSnackbar(false)}>
+            {error}
+          </Alert>
+        </Snackbar>
       </Container>
     </Box>
   );
