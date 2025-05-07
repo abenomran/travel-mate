@@ -46,7 +46,7 @@ export async function POST(req) {
     
     const clothingSuggestionsPrompt = `Suggest clothing for a trip from ${startDate} to ${endDate} to ${destination} with activities: ${activities.join(", ")}. Bullet point format with bolded headings. Be concise (max 100 words). Dont provide a heading that says "Clothing Suggestions". Make suggestions based on the weather for the provided dates.`;
 
-    const localEtiquettePrompt = `Provide local etiquette tips for ${destination}. Keep it under 100 words. Bullet point format with bolded headings. Dont provide a heading that says "Local Etiquette".`;
+    const localEtiquettePrompt = `Provide local etiquette tips for ${destination}. Keep it under 100 words. Bullet point format with bolded headings. Dont provide a heading that says "Local Etiquette". Don't say "Okay here are some".`;
 
     const localEtiquette = await generateSectionContent(localEtiquettePrompt);
     const packingList = await generateSectionContent(packingListPrompt);

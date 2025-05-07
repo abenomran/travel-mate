@@ -158,6 +158,9 @@ export default function GetStarted() {
                 onChange={(e) => setStartDate(e.target.value)}
                 InputLabelProps={{ shrink: true }}
                 fullWidth
+                inputProps={{
+                  min: new Date().toISOString().split('T')[0]
+                }}
               />
               <TextField
                 label="End Date"
@@ -166,6 +169,9 @@ export default function GetStarted() {
                 onChange={(e) => setEndDate(e.target.value)}
                 InputLabelProps={{ shrink: true }}
                 fullWidth
+                inputProps={{
+                  min: startDate || new Date().toISOString().split('T')[0]
+                }}
               />
             </Box>
 
