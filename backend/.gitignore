@@ -1,2 +1,3 @@
 # firebase service account key
 serviceAccountKey.json
+.env
