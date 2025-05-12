@@ -15,6 +15,11 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   );
 }
 
+// for local dev
+// else {
+//   serviceAccount = require("@/serviceAccountKey.json");
+// }
+
 // initialize firebase SDK for backend (admin)
 const app =
   getApps().length === 0
