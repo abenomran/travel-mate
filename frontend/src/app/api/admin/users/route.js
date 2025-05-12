@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server";
 import { initializeApp, cert, getApps, getApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import serviceAccount from "@/serviceAccountKey.json";
 import { getFirestore } from "firebase-admin/firestore";
+
+// old, manually downloaded service account key
+// import serviceAccount from "@/serviceAccountKey.json";
+
+// firebase service account
+let serviceAccount;
+
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  serviceAccount = JSON.parse(
+    Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, "base64").toString("utf8")
+  );
+} else {
+  // local fallback
+  serviceAccount = require("./serviceAccountKey.json");
+}
 
 // initialize firebase SDK for backend (admin)
 const app =
@@ -34,15 +48,12 @@ export async function POST(req) {
 
   try {
     const userRecord = await getAuth().createUser({ email, password });
-    const db = getFirestore()
-    await db
-      .collection('users')
-      .doc(userRecord.uid)
-      .set({
-        email:     userRecord.email,
-        createdAt: new Date(),    // server timestamp
-        role:      'user',
-      })
+    const db = getFirestore();
+    await db.collection("users").doc(userRecord.uid).set({
+      email: userRecord.email,
+      createdAt: new Date(), // server timestamp
+      role: "user",
+    });
     return NextResponse.json({ uid: userRecord.uid });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -51,19 +62,19 @@ export async function POST(req) {
 
 async function deleteUserData(db, userDocRef) {
   const collections = await userDocRef.listCollections();
-  
+
   for (const collectionRef of collections) {
     const snapshot = await collectionRef.get();
-    
+
     const batch = db.batch();
-    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
 
     for (const doc of snapshot.docs) {
       await deleteUserData(db, doc.ref);
     }
   }
-  
+
   await userDocRef.delete();
 }
 
@@ -79,15 +90,14 @@ export async function DELETE(req) {
 
   try {
     const userDocRef = db.collection("users").doc(uid);
-    
+
     await deleteUserData(db, userDocRef);
-    
+
     await auth.deleteUser(uid);
 
-    return NextResponse.json({ 
-      message: "User account and all associated data deleted" 
+    return NextResponse.json({
+      message: "User account and all associated data deleted",
     });
-    
   } catch (error) {
     console.error("Deletion error:", error);
     return NextResponse.json(
