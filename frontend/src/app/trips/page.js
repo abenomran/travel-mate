@@ -11,7 +11,7 @@ import {
   Box,
   Button,
   Chip,
-  Stack
+  Stack,
 } from "@mui/material";
 import Link from "next/link";
 import dayjs from "dayjs";
@@ -139,13 +139,22 @@ export default function Trips() {
                   {dayjs(trip.endDate).format("MMM D, YYYY")}
                 </Typography>
                 {trip.activities?.length > 0 ? (
-                  <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ mt: 1 }}>
+                  <Stack
+                    direction="row"
+                    flexWrap="wrap"
+                    spacing={1}
+                    sx={{ mt: 1 }}
+                  >
                     {trip.activities.map((act) => (
                       <Chip key={act} label={act} size="small" />
                     ))}
                   </Stack>
                 ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: "italic" }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1, fontStyle: "italic" }}
+                  >
                     No activities planned
                   </Typography>
                 )}
@@ -159,82 +168,83 @@ export default function Trips() {
 
   return (
     <Box
-    sx={{
-      background: 'linear-gradient(135deg,rgb(216, 243, 250) 0%,rgb(178, 227, 255) 100%)',
-      minHeight: '100vh',
-      py: 8,
-    }}
-  >
-    <Container maxWidth="md">
-      <Typography variant="h4" gutterBottom fontWeight="bold">
-        Your Trips
-      </Typography>
+      sx={{
+        background:
+          "linear-gradient(135deg,rgb(216, 243, 250) 0%,rgb(178, 227, 255) 100%)",
+        minHeight: "100vh",
+        py: 8,
+      }}
+    >
+      <Container maxWidth="md">
+        <Typography variant="h4" gutterBottom fontWeight="bold">
+          Your Trips
+        </Typography>
 
-      {loading ? (
-        <CircularProgress />
-      ) : trips.length === 0 ? (
-        <>
-          <Typography variant="h6" gutterBottom>
-            Looks like you haven't created any trips yet.
-          </Typography>
-          <Typography variant="body1" gutterBottom>
-            Ready to start planning? Let us help you pack smart and travel
-            better.
-          </Typography>
-          <Button variant="contained" color="primary" href="/get-started">
-            Plan Your First Trip
-          </Button>
-        </>
-      ) : (
-        <>
-          <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
-            Upcoming Trips
-          </Typography>
-          {reminderMessage && upcomingTrips.length > 0 && (
-          <Typography
-            variant="body1"
-            sx={{
-              mb: 2,
-              color: "#b34104",
-              fontWeight: 500,
-              backgroundColor: "#fff7eb",
-              p: 1.5,
-              borderRadius: 1,
-              borderLeft: "4px solid orange",
-              whiteSpace: "pre-line"   // ← preserves \n as line breaks
-            }}
-          >
-            {reminderMessage}
-          </Typography>
-        )}
-          {upcomingTrips.length > 0 ? (
-            renderTrips(upcomingTrips)
-          ) : (
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              No upcoming trips in the next 3 days.
+        {loading ? (
+          <CircularProgress />
+        ) : trips.length === 0 ? (
+          <>
+            <Typography variant="h6" gutterBottom>
+              {"Looks like you haven't created any trips yet."}
             </Typography>
-          )}
+            <Typography variant="body1" gutterBottom>
+              Ready to start planning? Let us help you pack smart and travel
+              better.
+            </Typography>
+            <Button variant="contained" color="primary" href="/get-started">
+              Plan Your First Trip
+            </Button>
+          </>
+        ) : (
+          <>
+            <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
+              Upcoming Trips
+            </Typography>
+            {reminderMessage && upcomingTrips.length > 0 && (
+              <Typography
+                variant="body1"
+                sx={{
+                  mb: 2,
+                  color: "#b34104",
+                  fontWeight: 500,
+                  backgroundColor: "#fff7eb",
+                  p: 1.5,
+                  borderRadius: 1,
+                  borderLeft: "4px solid orange",
+                  whiteSpace: "pre-line", // ← preserves \n as line breaks
+                }}
+              >
+                {reminderMessage}
+              </Typography>
+            )}
+            {upcomingTrips.length > 0 ? (
+              renderTrips(upcomingTrips)
+            ) : (
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                No upcoming trips in the next 3 days.
+              </Typography>
+            )}
 
-          <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
-            Future Trips
-          </Typography>
-          {futureTrips.length > 0 ? (
-            renderTrips(futureTrips)
-          ) : (
-            <Typography variant="body2">No future trips yet.</Typography>
-          )}
+            <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
+              Future Trips
+            </Typography>
+            {futureTrips.length > 0 ? (
+              renderTrips(futureTrips)
+            ) : (
+              <Typography variant="body2">No future trips yet.</Typography>
+            )}
 
-          <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
-            Past Trips
-          </Typography>
-          {pastTrips.length > 0 ? (
-            renderTrips(pastTrips)
-          ) : (
-            <Typography variant="body2">No past trips yet.</Typography>
-          )}
-        </>
-      )}
-    </Container>
-  </Box>
+            <Typography variant="h5" sx={{ mt: 4, mb: 1 }} fontWeight="bold">
+              Past Trips
+            </Typography>
+            {pastTrips.length > 0 ? (
+              renderTrips(pastTrips)
+            ) : (
+              <Typography variant="body2">No past trips yet.</Typography>
+            )}
+          </>
+        )}
+      </Container>
+    </Box>
   );
 }

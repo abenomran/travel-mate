@@ -137,43 +137,43 @@ export default function Home() {
           <Grid container spacing={5}>
             {steps.map((step, idx) => (
               <Grid item xs={12} sm={6} md={4} key={idx}>
-                  <Card
-                    component="a"
+                <Card
+                  component="a"
+                  sx={{
+                    height: "100%",
+                    width: "350px",
+                    display: "flex",
+                    flexDirection: "column",
+                    textDecoration: "none",
+                    borderRadius: 3,
+                    border: "1px solid #e0e0e0",
+                    overflow: "hidden",
+                    transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                    "&:hover": {
+                      transform: "translateY(-6px)",
+                      boxShadow: 6,
+                    },
+                  }}
+                >
+                  <CardMedia
+                    component="img"
+                    image={step.image}
+                    alt={step.label}
                     sx={{
-                      height: "100%",
-                      width: "350px",
-                      display: "flex",
-                      flexDirection: "column",
-                      textDecoration: "none",
-                      borderRadius: 3,
-                      border: "1px solid #e0e0e0",
-                      overflow: "hidden",
-                      transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                      "&:hover": {
-                        transform: "translateY(-6px)",
-                        boxShadow: 6,
-                      },
+                      height: 200,
+                      width: "100%",
+                      objectFit: "cover",
                     }}
-                  >
-                    <CardMedia
-                      component="img"
-                      image={step.image}
-                      alt={step.label}
-                      sx={{
-                        height: 200,
-                        width: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                    <CardContent sx={{ textAlign: "center", flexGrow: 1 }}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Step {idx + 1}
-                      </Typography>
-                      <Typography variant="h6" fontWeight={600}>
-                        {step.label}
-                      </Typography>
-                    </CardContent>
-                  </Card>
+                  />
+                  <CardContent sx={{ textAlign: "center", flexGrow: 1 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Step {idx + 1}
+                    </Typography>
+                    <Typography variant="h6" fontWeight={600}>
+                      {step.label}
+                    </Typography>
+                  </CardContent>
+                </Card>
               </Grid>
             ))}
           </Grid>
@@ -181,7 +181,7 @@ export default function Home() {
 
         <Container maxWidth="lg" sx={{ py: 8 }}>
           <Typography variant="h4" gutterBottom>
-            Who's It For?
+            {"Who's It For?"}
           </Typography>
           <Grid container spacing={4}>
             {[

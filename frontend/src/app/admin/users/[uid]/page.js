@@ -94,8 +94,9 @@ export default function Trips() {
         mb={4}
       >
         <Typography variant="h4" gutterBottom fontWeight="bold">
-          {userEmail}'s Trips
+          {`${userEmail}'s Trips`}
         </Typography>
+
         <Button
           variant="contained"
           onClick={() => setOpenCreateDialog(true)}
@@ -110,7 +111,7 @@ export default function Trips() {
       ) : trips.length === 0 ? (
         <>
           <Typography variant="h6" gutterBottom>
-            User hasn't created any trips yet.
+            {"User hasn't created any trips yet."}
           </Typography>
         </>
       ) : (
